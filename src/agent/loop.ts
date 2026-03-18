@@ -49,17 +49,16 @@ function buildTools(schemaDef: RunConfig["schemaDef"]): Anthropic.Tool[] {
     },
     {
       name: "extract_structured_data",
-      description: `Save structured records you have extracted from a scraped page. Call this after every scrape where you found relevant data. Only include records where you are confident in all values — no guessing.
+      description: `Save structured records you have extracted from a scraped page. Call this after every scrape, even if you found 0 records — pass an empty array if nothing matched.
 
 Target schema fields:
 ${fieldDescriptions}
 
-${schemaDef.namingRules && schemaDef.namingRules.length > 0 ? `Naming rules (critical for deduplication):\n${schemaDef.namingRules.map((r) => `- ${r}`).join("\n")}\n\n` : ""}Rate rules:
-- If a product has a single rate, record it exactly as shown (e.g. "0.75%").
-- If a product has tiered rates by balance (e.g. 0.45% for <5k CHF, 0.39% for >50k CHF), express it as a range like "0.39%–0.45%". Do NOT create separate records per tier — one product = one record.
-- If a product has multiple genuinely distinct named sub-products (e.g. different funds or strategies with different names), those may be separate records, each with their own kontoName.
-
-URL field: fill in the bank's own official website URL if known (e.g. "https://www.zkb.ch/..."). If not known yet, leave blank. NEVER put a comparison site URL here. Leaving \`url\` blank is fine — always extract the other fields immediately.`,
+${schemaDef.namingRules && schemaDef.namingRules.length > 0 ? `Naming rules (critical for deduplication):\n${schemaDef.namingRules.map((r) => `- ${r}`).join("\n")}\n\n` : ""}Rules:
+- Only include records where all required fields are clearly stated on the page — no guessing
+- One record per distinct product or entity
+- If a field has tiered values (e.g. varies by balance tier), capture them in a single record using the provider's own notation (e.g. "0.39%–0.75%" or "from 0.39%") — do NOT create separate records per tier
+- URL field: use the provider's own official page URL if known; leave blank rather than using a comparison site URL`,
       input_schema: {
         type: "object" as const,
         properties: {
@@ -301,7 +300,7 @@ export async function runAgent(
                   if (!urlDepth.has(link.url)) urlDepth.set(link.url, depth + 1);
                 }
                 resultContent = JSON.stringify({
-                  markdown: result.markdown.slice(0, 15000),
+                  markdown: result.markdown.slice(0, 50000),
                   links: result.links.slice(0, 150).map(l => l.url),
                 });
                 log("scrape_done", { url, depth, chars: result.markdown.length, links: result.links.length });

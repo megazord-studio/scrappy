@@ -174,16 +174,22 @@ async function withRetry<T>(
 const CONTEXT_WINDOW = 4;
 
 function trimMessages(messages: OpenAI.ChatCompletionMessageParam[]): void {
-  // messages[0] is always the initial user prompt
-  // Keep first message + last CONTEXT_WINDOW*2 messages
-  if (messages.length > 1 + CONTEXT_WINDOW * 2) {
-    messages.splice(1, messages.length - 1 - CONTEXT_WINDOW * 2);
+  // messages[0] is the initial user prompt; after that: [assistant+tool_calls, tool, tool, ...]
+  // We MUST trim at turn boundaries — never split an assistant message from its tool results,
+  // because OpenAI requires ALL tool_calls to have corresponding tool results in the same turn.
+  if (messages.length <= 1) return;
+
+  // Parse turns: each turn starts with an assistant message and includes all following tool messages
+  const turnStarts: number[] = [];
+  for (let i = 1; i < messages.length; i++) {
+    if (messages[i].role === "assistant") turnStarts.push(i);
   }
-  // After trimming, the cut may land mid-turn leaving orphaned tool messages
-  // (tool messages with no preceding assistant+tool_calls). Drop them.
-  while (messages.length > 1 && messages[1].role === "tool") {
-    messages.splice(1, 1);
-  }
+
+  if (turnStarts.length <= CONTEXT_WINDOW) return; // nothing to trim
+
+  // Drop oldest turns, keep last CONTEXT_WINDOW
+  const firstKept = turnStarts[turnStarts.length - CONTEXT_WINDOW];
+  messages.splice(1, firstKept - 1);
 }
 
 export async function runAgentOpenAI(
@@ -338,7 +344,7 @@ export async function runAgentOpenAI(
                   if (!urlDepth.has(link.url)) urlDepth.set(link.url, depth + 1);
                 }
                 resultContent = JSON.stringify({
-                  markdown: result.markdown.slice(0, 15000),
+                  markdown: result.markdown.slice(0, 50000),
                   links: result.links.slice(0, 150).map((l) => l.url),
                 });
                 log("scrape_done", { url, depth, chars: result.markdown.length, links: result.links.length });
