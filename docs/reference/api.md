@@ -70,7 +70,7 @@ fetch('/outputs/3a-rates/records?filter[bankName]=UBS')
 
 ### `POST /jobs/update`
 
-Re-scrapes official URLs and refreshes rate fields for an existing dataset.
+Re-scrapes official URLs and refreshes tracked fields for an existing dataset.
 
 **Headers**
 ```

@@ -42,7 +42,7 @@ namingRules: [
 ]
 ```
 
-## Rate fields
+## Tracked fields
 
 Fields listed in `rateFields` are the ones the update command will try to refresh. They should be described as precisely as possible because the BM25 query is built from their descriptions.
 

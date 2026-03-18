@@ -22,14 +22,14 @@ The agent loop runs until it has exhausted available sources:
 
 Records are tagged `_dataSource: "comparison"` or `"official"`. If the same record is found on both a comparison site and the provider's own page, the official version wins.
 
-### Update — Rate refresh
+### Update — Data refresh
 
 Used to keep existing records up to date without re-running a full index:
 
 1. Records with a stored official URL are scraped directly
 2. Records with only a comparison URL trigger a Google search to find the official page first
 3. Crawl4AI fetches the page using BM25 keyword filtering (returns only the relevant content sections)
-4. Claude Haiku extracts the rate fields from the filtered markdown
+4. Claude Haiku extracts the tracked fields from the filtered markdown
 5. Values are compared numerically (avoids false positives from formatting differences like `"0.45%"` vs `"0.45% p. a."`)
 6. Changed rows are updated in the database with a new `_lastUpdated` timestamp
 
@@ -70,7 +70,7 @@ src/
 │   ├── loop.ts           Agent loop with tool orchestration
 │   └── llm-client.ts     LLM abstraction (Anthropic, OpenAI, ZordMind)
 ├── commands/
-│   └── update.ts         Rate refresh command
+│   └── update.ts         Update / data refresh command
 ├── tools/
 │   ├── crawl.ts          Crawl4AI HTTP client
 │   ├── serp.ts           SerpAPI Google search
@@ -200,7 +200,7 @@ npm start -- index \
   --output results.csv \
   --max-iterations 40
 
-# Update: refresh rates in existing CSV
+# Update: refresh data in existing dataset
 npm start -- update \
   --input results.csv \
   --schema schemas/3a-konto.ts \

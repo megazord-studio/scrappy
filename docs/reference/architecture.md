@@ -34,7 +34,7 @@ src/
 │   ├── loop.ts           Agent loop + tool definitions + system prompt
 │   └── llm-client.ts     LLM abstraction (Anthropic / OpenAI / ZordMind)
 ├── commands/
-│   └── update.ts         Rate refresh — BM25 scrape + Haiku extraction
+│   └── update.ts         Update — BM25 scrape + Haiku extraction
 ├── tools/
 │   ├── crawl.ts          Crawl4AI /crawl client (index agent)
 │   ├── serp.ts           SerpAPI Google search
@@ -81,7 +81,7 @@ The index agent uses a minimal crawler config (`delay_before_return_html: 8s`, s
 
 The update command uses two Crawl4AI modes:
 
-- **`/md` with BM25** (stage 1) — returns only page sections relevant to the rate field descriptions; typically 1–5k chars
+- **`/md` with BM25** (stage 1) — returns only page sections relevant to the tracked field descriptions; typically 1–5k chars
 - **`/crawl`** (stages 2 and 3) — full HTML response; the raw HTML is scanned with a regex for all `href` attributes, including those in custom web components that markdown conversion would miss
 
 PDF links discovered in stages 2/3 are fetched directly via `https.get` (not Crawl4AI), with a TLS fallback (`rejectUnauthorized: false`) to handle Swiss CA certificates not in the Node.js trust store.

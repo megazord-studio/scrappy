@@ -26,7 +26,7 @@ npm start -- index \
 
 ## update
 
-Refresh rate fields in an existing dataset.
+Refresh tracked fields in an existing dataset.
 
 ```bash
 npm start -- update \

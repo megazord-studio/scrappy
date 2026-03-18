@@ -1,6 +1,6 @@
 # LLM Providers
 
-Scrappy uses two models per provider: a heavier **agent model** for the index loop (tool-use, reasoning) and a lighter **extract model** for rate extraction in update jobs.
+Scrappy uses two models per provider: a heavier **agent model** for the index loop (tool-use, reasoning) and a lighter **extract model** for field extraction in update jobs.
 
 ## Supported providers
 
