@@ -14,15 +14,18 @@ npm start -- index \
   --schema <path> \
   --output <dataset-name> \
   [--max-iterations <number>] \
-  [--seed-urls <url> ...]
+  [--max-depth <number>] \
+  [--crawl4ai <url>]
 ```
 
 | Option | Description | Default |
 |---|---|---|
 | `--topic` | Research topic for the agent | required |
 | `--schema` | Path to schema `.ts` file | required |
-| `--output` | Dataset name for results | required |
+| `--output` | Dataset name to store results | required |
 | `--max-iterations` | Max agent loop iterations | `40` |
+| `--max-depth` | Max crawl depth for link following | `3` |
+| `--crawl4ai` | Crawl4AI base URL | `https://crawl.naszilla.ch` |
 
 ## update
 
@@ -32,33 +35,29 @@ Refresh tracked fields in an existing dataset.
 npm start -- update \
   --input <dataset-name> \
   --schema <path> \
-  [--filter <string>]
+  [--crawl4ai <url>]
 ```
 
-| Option | Description |
-|---|---|
-| `--input` | Dataset name to update |
-| `--schema` | Path to schema `.ts` file |
-| `--filter` | Only update rows where dedupeKey fields contain this string |
+| Option | Description | Default |
+|---|---|---|
+| `--input` | Dataset name to update | required |
+| `--schema` | Path to schema `.ts` file | required |
+| `--crawl4ai` | Crawl4AI base URL | `https://crawl.naszilla.ch` |
+
+> **Filtering** is only available via the REST API (`POST /jobs/update` with a `filter` body param), not the CLI.
 
 ## Examples
 
 ```bash
-# Index Swiss 3a accounts
+# Index mobile plans
 npm start -- index \
-  --topic "Swiss Säule 3a accounts interest rates" \
-  --schema schemas/3a-konto.ts \
-  --output 3a-konto \
+  --topic "Swiss mobile plans" \
+  --schema schemas/mobile.ts \
+  --output mobile-plans \
   --max-iterations 60
 
 # Update all rows
 npm start -- update \
-  --input 3a-konto \
-  --schema schemas/3a-konto.ts
-
-# Update only UBS
-npm start -- update \
-  --input 3a-konto \
-  --schema schemas/3a-konto.ts \
-  --filter "UBS"
+  --input mobile-plans \
+  --schema schemas/mobile.ts
 ```

@@ -197,14 +197,13 @@ To refresh existing data: go to Scrape → select a dataset → run Update.
 npm start -- index \
   --topic "Swiss savings accounts" \
   --schema schemas/3a-konto.ts \
-  --output results.csv \
+  --output 3a-konto \
   --max-iterations 40
 
 # Update: refresh data in existing dataset
 npm start -- update \
-  --input results.csv \
-  --schema schemas/3a-konto.ts \
-  --filter "UBS"            # optional: only refresh rows matching this string
+  --input 3a-konto \
+  --schema schemas/3a-konto.ts
 ```
 
 ---

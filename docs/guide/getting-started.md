@@ -53,6 +53,6 @@ Open `http://localhost:3000` in your browser.
 npm start -- index \
   --topic "Swiss savings accounts" \
   --schema schemas/3a-konto.ts \
-  --output results.csv \
+  --output my-dataset \
   --max-iterations 40
 ```

@@ -17,10 +17,10 @@ Set `ANTHROPIC_API_KEY` in `.env`.
 
 | Role | Default model |
 |---|---|
-| Agent | `gpt-5.4` |
-| Extract | `gpt-5.4-mini` |
+| Agent | `gpt-4o` |
+| Extract | `gpt-4o-mini` |
 
-Set `OPENAI_KEY` in `.env`.
+Set `OPENAI_KEY` in `.env`. You can override the model names in Settings.
 
 ### ZordMind (self-hosted)
 
@@ -40,8 +40,8 @@ In `data/settings.json`:
   "llmProvider": "anthropic",
   "anthropicAgentModel": "claude-opus-4-6",
   "anthropicExtractModel": "claude-haiku-4-5-20251001",
-  "openaiModel": "gpt-5.4",
-  "openaiExtractModel": "gpt-5.4-mini"
+  "openaiModel": "gpt-4o",
+  "openaiExtractModel": "gpt-4o-mini"
 }
 ```
 
