@@ -64,7 +64,7 @@ ${fieldDescriptions}${namingSection}
 Rules:
 - Call this after every scrape_url call, even if you found 0 records (pass empty array)
 - Only include records where all required fields are present and clearly stated — no guessing
-- One record per distinct product or entity; do not create separate records for pricing tiers
+- One record per clearly distinct named product. If a page describes multiple variations of the same product (e.g. fund strategies within one product family, or the same product under slightly different names), extract ONE record for the product — do not create multiple records for what is essentially the same offering
 - For the url field: use the official provider page URL, never a comparison/aggregator site URL`,
         parameters: {
           type: "object",
@@ -276,19 +276,31 @@ export async function runAgentOpenAI(
     // Handle finish before parallel dispatch
     const finishCall = toolCalls.find((tc) => tc.function.name === "finish");
     if (finishCall) {
-      const minScrapes = Math.min(20, Math.floor(config.maxIterations * 0.75));
+      const minScrapes = Math.min(25, Math.floor(config.maxIterations * 0.8));
       const tooFewScrapes = visitedUrls.size < minScrapes;
       const tooFewRecords = allRecords.length < 5 && visitedUrls.size >= 5;
+      // Check if there are providers only seen on comparison sites with no official record
+      const officialProviders = new Set(
+        allRecords.filter(r => r._dataSource === "official").map(r => String(r[config.schemaDef.dedupeKey[1] ?? ""] ?? "").toLowerCase())
+      );
+      const comparisonOnlyProviders = allRecords
+        .filter(r => r._dataSource === "comparison")
+        .map(r => String(r[config.schemaDef.dedupeKey[1] ?? ""] ?? ""))
+        .filter(name => name && !officialProviders.has(name.toLowerCase()));
+      const uniqueComparisonOnly = [...new Set(comparisonOnlyProviders)].slice(0, 5);
+      const hasUnvisitedProviders = uniqueComparisonOnly.length > 0;
       const notNearEnd = iteration < config.maxIterations - 3;
-      if ((tooFewScrapes || tooFewRecords) && notNearEnd) {
+      if ((tooFewScrapes || tooFewRecords || hasUnvisitedProviders) && notNearEnd) {
         const reason = tooFewRecords
-          ? `only ${allRecords.length} records found so far — keep scraping more provider pages`
+          ? `only ${allRecords.length} records found so far`
+          : hasUnvisitedProviders
+          ? `these providers only have comparison data, no official pages scraped yet: ${uniqueComparisonOnly.join(", ")}`
           : `only ${visitedUrls.size} pages scraped out of expected ~${minScrapes}`;
         log("log", { message: `Finish rejected (${reason}). Continuing…` });
         messages.push({
           role: "tool",
           tool_call_id: finishCall.id,
-          content: `Not done yet — ${reason}. Continue searching and scraping individual provider pages.`,
+          content: `Not done yet — ${reason}. Search for and scrape the official pages for these providers.`,
         });
         continue;
       }
