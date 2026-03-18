@@ -22,6 +22,9 @@ jobs:
       - name: Lowercase owner
         run: echo "OWNER=$(echo '${{ github.repository_owner }}' | tr '[:upper:]' '[:lower:]')" >> $GITHUB_ENV
 
+      - name: Set version tag
+        run: echo "VERSION=$(date +'%Y-%m-%d')-$(echo '${{ github.sha }}' | cut -c1-7)" >> $GITHUB_ENV
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -47,7 +50,9 @@ jobs:
           context: .
           file: Dockerfile
           push: true
-          tags: ghcr.io/${{ env.OWNER }}/scrappy:latest
+          tags: |
+            ghcr.io/${{ env.OWNER }}/scrappy:latest
+            ghcr.io/${{ env.OWNER }}/scrappy:${{ env.VERSION }}
           cache-from: type=gha,scope=app
           cache-to: type=gha,mode=max,scope=app
 
@@ -57,6 +62,8 @@ jobs:
           context: .
           file: Dockerfile.docs
           push: true
-          tags: ghcr.io/${{ env.OWNER }}/scrappy-docs:latest
+          tags: |
+            ghcr.io/${{ env.OWNER }}/scrappy-docs:latest
+            ghcr.io/${{ env.OWNER }}/scrappy-docs:${{ env.VERSION }}
           cache-from: type=gha,scope=docs
           cache-to: type=gha,mode=max,scope=docs
