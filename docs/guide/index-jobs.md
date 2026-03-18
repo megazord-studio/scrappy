@@ -26,8 +26,8 @@ The biggest practical win. Point the agent directly at known comparison portals 
 const schemaDef: SchemaDefinition = {
   // ...
   seedUrls: [
+    "https://www.comparis.ch/telecom/mobile/vergleich",
     "https://www.moneyland.ch/de/3a-konto-vergleich",
-    "https://www.comparis.ch/vorsorge/3a",
   ],
 };
 ```
@@ -38,10 +38,10 @@ You can run the same index job repeatedly with different seed URLs or topic phra
 
 ```bash
 # First pass — comparison portals
-npm start -- index --topic "Swiss 3a accounts" --schema schemas/3a-konto.ts --output 3a-konto
+npm start -- index --topic "Swiss mobile plans 2025" --schema schemas/mobile.ts --output mobile-plans
 
-# Second pass — different angle
-npm start -- index --topic "Säule 3a Zinsen Schweiz 2025" --schema schemas/3a-konto.ts --output 3a-konto
+# Second pass — different angle, same dataset
+npm start -- index --topic "Schweizer Mobilabo Vergleich Preise" --schema schemas/mobile.ts --output mobile-plans
 ```
 
 ## How the agent decides to stop

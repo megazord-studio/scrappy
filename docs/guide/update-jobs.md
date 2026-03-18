@@ -1,25 +1,25 @@
 # Update Jobs
 
-An update job refreshes the rate fields in an existing dataset by re-scraping official provider pages.
+An update job re-scrapes source pages and refreshes the tracked fields in an existing dataset — without running a full re-index.
 
 ## How it works
 
 Records are first split into two buckets:
 
-**Official rows** — the stored URL points to a provider's own domain (e.g. `https://www.ubs.com/...`):
+**Official rows** — the stored URL points to a provider's own domain:
 → Enter the 3-stage pipeline directly
 
-**Comparison-only rows** — the stored URL points to a comparison site (moneyland.ch, comparis.ch, etc.):
+**Comparison-only rows** — the stored URL points to a comparison site (comparis.ch, moneyland.ch, etc.):
 → A Google SERP search is run first to find the official page, then enters the pipeline
 
 ### Stage 1 — BM25 scrape
 
-Crawl4AI fetches the page using `filter_type: "bm25"`, passing the rate field descriptions as the query. Returns only the sections of the page relevant to those terms — typically 1–5k chars instead of 30k+. Claude Haiku extracts the rate fields. If values are found, the record is updated and the pipeline stops here.
+Crawl4AI fetches the page using `filter_type: "bm25"`, passing the tracked field descriptions as the query. Returns only the sections of the page relevant to those terms — typically 1–5k chars instead of 30k+. Claude Haiku extracts the values. If they're found, the record is updated and the pipeline stops here.
 
 ### Stage 2 — Full crawl
 
 If BM25 returned nothing useful, the full page is fetched without any content filter. This helps with:
-- Pages where rates are hidden in JS-rendered widgets
+- Pages where values are hidden in JS-rendered widgets
 - Custom HTML elements (web components) that markdown extraction misses — the full HTML is scanned for all `href` attributes including those in non-standard tags
 
 Any new links discovered in stage 2 are added to the candidate pool for stage 3. Claude Haiku tries again on the full-page markdown.
@@ -31,8 +31,8 @@ If still no result, outbound links from the page are scored by relevance and the
 | Signal | Score |
 |---|---|
 | `.pdf` extension | +3 |
-| URL path contains rate keywords (`zins`, `rate`, `tarif`, `prix`, `rendement`, `kondition`) | +2 |
-| Anchor text contains rate keywords | +2 |
+| URL path contains relevant keywords (`zins`, `rate`, `tarif`, `prix`, `rendement`, `kondition`, `preis`) | +2 |
+| Anchor text contains relevant keywords | +2 |
 | No path-level keyword signal | ×0.5 |
 
 The top 5 scoring links are tried. PDFs are downloaded and parsed directly (with TLS fallback for Swiss CA certificates). HTML pages are scraped via Crawl4AI.
@@ -43,15 +43,15 @@ The routing condition checks the **stored URL**, not the `_dataSource` field. A 
 
 After a successful update, `_dataSource` is set to `"official"`.
 
-## Rate comparison
+## Value comparison
 
-Values are compared **numerically**, not as strings. This avoids false positives from formatting differences:
+Extracted values are compared **numerically** where possible to avoid false positives from formatting differences:
 
 | Old | New | Result |
 |---|---|---|
+| `29.90` | `CHF 29.90/month` | unchanged |
+| `29.90` | `39.90` | **changed** |
 | `0.45%` | `0.45% p. a.` | unchanged |
-| `0.45%` | `0.50%` | **changed** |
-| `0.39%–0.45%` | `0.39%–0.45%` | unchanged |
 
 Changed rows get a new `_lastUpdated` timestamp.
 
@@ -65,7 +65,7 @@ Changed rows get a new `_lastUpdated` timestamp.
 
 ## UI
 
-Start an update job from the **Scrape → Update** tab. Select the dataset, schema, and an optional provider filter, then click **↻ Run**. The monitor view shows updated rows in real time (green = rate changed).
+Start an update job from the **Scrape → Update** tab. Select the dataset, schema, and an optional filter, then click **↻ Run**. The monitor view shows updated rows in real time (green = value changed).
 
 ## Requirements
 
