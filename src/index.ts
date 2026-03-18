@@ -48,8 +48,8 @@ program
     const { initRecordsSchema, appendRecords: appendRec } = await import("./tools/records.js");
     initRecordsSchema(cliDb);
     const records = await runAgent(config, createAnthropicClient(anthropicApiKey!), serpApiKey!, opts.crawl4ai);
-    const { written, skipped } = await appendRec(records, dataset, schemaDef, cliDb);
-    console.log(`Done. ${written} records written to ${opts.output} (${skipped} duplicates skipped).`);
+    const { written, promoted, skipped } = await appendRec(records, dataset, schemaDef, cliDb);
+    console.log(`Done. ${written} records written, ${promoted} promoted to official, ${skipped} duplicates skipped → ${opts.output}`);
   });
 
 // --- update command: re-scrape official URLs and refresh rate fields ---

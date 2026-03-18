@@ -79,7 +79,7 @@ export async function getOutputs(): Promise<{ outputs: string[] }> {
 }
 
 export async function getRecords(file: string): Promise<RecordsResponse> {
-  return fetch(`/outputs/${file}/records`).then(r => r.json());
+  return fetch(`/outputs/${file}/records?limit=200`).then(r => r.json());
 }
 
 export async function mergeRows(file: string, keepId: number, removeIds: number[]): Promise<Response> {

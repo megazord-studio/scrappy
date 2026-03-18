@@ -308,9 +308,9 @@ app.get("/outputs/:dataset/records", async (req, reply) => {
     filter,
   });
 
-  if (total === 0) return { headers: [], rows: [], total: 0, limit: 100, offset: 0 };
+  if (total === 0) return { headers: [], rows: [], total: 0, limit: 200, offset: 0 };
   const headers = Object.keys(rows[0]).filter((k) => k !== "_id");
-  return { headers, rows, total, limit: q.limit ? parseInt(q.limit, 10) : 100, offset: q.offset ? parseInt(q.offset, 10) : 0 };
+  return { headers, rows, total, limit: q.limit ? parseInt(q.limit, 10) : 200, offset: q.offset ? parseInt(q.offset, 10) : 0 };
 });
 
 await seedSchemasFromFiles(db);

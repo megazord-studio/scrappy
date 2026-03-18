@@ -18,6 +18,13 @@ interface ToolInput {
   records?: ExtractedRecord[];
 }
 
+function normalizeUrl(url: string): string {
+  return url.trim().toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/$/, "");
+}
+
 function buildTools(schemaDef: RunConfig["schemaDef"]): Anthropic.Tool[] {
   const fieldDescriptions = Object.entries(schemaDef.fieldDescriptions)
     .map(([k, v]) => `  - ${k}: ${v}`)
@@ -268,8 +275,8 @@ export async function runAgent(
     for (const block of toolBlocks) {
       if (block.name === "scrape_url") {
         const url = (block.input as ToolInput).url!;
-        if (!visitedUrls.has(url)) {
-          visitedUrls.add(url);
+        if (!visitedUrls.has(normalizeUrl(url))) {
+          visitedUrls.add(normalizeUrl(url));
           newScrapeUrls.add(url);
         }
       }

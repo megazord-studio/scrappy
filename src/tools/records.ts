@@ -105,7 +105,7 @@ export function readRecordsPaginated(
   db: Database.Database,
   opts: PaginatedOptions = {}
 ): { rows: CsvRow[]; total: number } {
-  const limit = Math.min(opts.limit ?? 100, 1000);
+  const limit = Math.min(opts.limit ?? 200, 1000);
   const offset = opts.offset ?? 0;
   const order = opts.order === "desc" ? "DESC" : "ASC";
 
@@ -137,34 +137,65 @@ export async function appendRecords(
   dataset: string,
   schemaDef: SchemaDefinition,
   db: Database.Database
-): Promise<{ written: number; skipped: number }> {
+): Promise<{ written: number; promoted: number; skipped: number }> {
   const existing = readRecords(dataset, db);
-  const existingKeys = new Set(existing.map((r) => makeKey(r, schemaDef.dedupeKey)));
+  const existingByKey = new Map(existing.map((r) => [makeKey(r, schemaDef.dedupeKey), r]));
   const existingUrlRateKeys = new Set(
     existing.map((r) => makeUrlRateKey(r, schemaDef)).filter((k): k is string => k !== null)
   );
 
-  const newRecords = records.filter((r) => {
-    if (existingKeys.has(makeKey(r, schemaDef.dedupeKey))) return false;
-    const urk = makeUrlRateKey(r, schemaDef);
-    if (urk && existingUrlRateKeys.has(urk)) return false;
-    return true;
-  });
+  const toInsert: CsvRow[] = [];
+  const toPromote: CsvRow[] = [];
 
-  if (newRecords.length === 0) return { written: 0, skipped: records.length };
-
-  const insert = db.prepare(
-    "INSERT INTO records (dataset, data, _data_source, _last_updated) VALUES (?, ?, ?, ?)"
-  );
-  const insertMany = db.transaction((rows: CsvRow[]) => {
-    for (const r of rows) {
-      const { data, dataSource, lastUpdated } = csvRowToDb(r);
-      insert.run(dataset, data, dataSource, lastUpdated);
+  for (const r of records) {
+    const key = makeKey(r, schemaDef.dedupeKey);
+    const existingRecord = existingByKey.get(key);
+    if (existingRecord) {
+      if (r._dataSource === "official" && existingRecord._dataSource === "comparison") {
+        toPromote.push(r);
+      }
+      continue;
     }
-  });
-  insertMany(newRecords);
+    const urk = makeUrlRateKey(r, schemaDef);
+    if (urk && existingUrlRateKeys.has(urk)) continue;
+    toInsert.push(r);
+  }
 
-  return { written: newRecords.length, skipped: records.length - newRecords.length };
+  if (toInsert.length > 0) {
+    const insert = db.prepare(
+      "INSERT INTO records (dataset, data, _data_source, _last_updated) VALUES (?, ?, ?, ?)"
+    );
+    db.transaction((rows: CsvRow[]) => {
+      for (const r of rows) {
+        const { data, dataSource, lastUpdated } = csvRowToDb(r);
+        insert.run(dataset, data, dataSource, lastUpdated);
+      }
+    })(toInsert);
+  }
+
+  if (toPromote.length > 0) {
+    const dbRows = db
+      .prepare("SELECT * FROM records WHERE dataset = ?")
+      .all(dataset) as DbRow[];
+    const updateStmt = db.prepare(
+      "UPDATE records SET data = ?, _data_source = ?, _last_updated = ? WHERE id = ?"
+    );
+    db.transaction(() => {
+      for (const dbRow of dbRows) {
+        const row = rowToCsvRow(dbRow);
+        const incoming = toPromote.find(
+          (r) => makeKey(r, schemaDef.dedupeKey) === makeKey(row, schemaDef.dedupeKey)
+        );
+        if (!incoming) continue;
+        const merged = { ...row, ...incoming };
+        const { data, lastUpdated } = csvRowToDb(merged);
+        updateStmt.run(data, "official", lastUpdated, dbRow.id);
+      }
+    })();
+  }
+
+  const skipped = records.length - toInsert.length - toPromote.length;
+  return { written: toInsert.length, promoted: toPromote.length, skipped };
 }
 
 export async function updateRecords(

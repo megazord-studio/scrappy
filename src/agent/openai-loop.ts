@@ -14,6 +14,13 @@ interface ToolInput {
   records?: ExtractedRecord[];
 }
 
+function normalizeUrl(url: string): string {
+  return url.trim().toLowerCase()
+    .replace(/^https?:\/\//, "")
+    .replace(/^www\./, "")
+    .replace(/\/$/, "");
+}
+
 function buildTools(schemaDef: RunConfig["schemaDef"]): OpenAI.ChatCompletionTool[] {
   const fieldDescriptions = Object.entries(schemaDef.fieldDescriptions)
     .map(([k, v]) => `  ${k}: ${v}`)
@@ -326,8 +333,8 @@ export async function runAgentOpenAI(
       if (tc.function.name === "scrape_url") {
         const input = JSON.parse(tc.function.arguments || "{}") as ToolInput;
         const url = input.url!;
-        if (!visitedUrls.has(url)) {
-          visitedUrls.add(url);
+        if (!visitedUrls.has(normalizeUrl(url))) {
+          visitedUrls.add(normalizeUrl(url));
           newScrapeUrls.add(url);
         }
       }

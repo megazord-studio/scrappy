@@ -59,10 +59,12 @@ export async function runIndexJob(job: Job): Promise<void> {
     };
 
     let totalWritten = 0;
+    let totalPromoted = 0;
     let totalSkipped = 0;
     const onRecords = async (records: ExtractedRecord[]) => {
-      const { written, skipped } = await appendRecords(records, dataset, schemaDef, db);
+      const { written, promoted, skipped } = await appendRecords(records, dataset, schemaDef, db);
       totalWritten += written;
+      totalPromoted += promoted;
       totalSkipped += skipped;
     };
 
@@ -75,7 +77,7 @@ export async function runIndexJob(job: Job): Promise<void> {
     if (job.abortController.signal.aborted) {
       finishJob(job, "cancelled", "Cancelled by user");
     } else {
-      finishJob(job, "done", `${totalWritten} records written, ${totalSkipped} duplicates skipped → ${dataset}`);
+      finishJob(job, "done", `${totalWritten} records written, ${totalPromoted} promoted, ${totalSkipped} duplicates skipped → ${dataset}`);
     }
   } catch (err) {
     finishJob(job, "failed", err instanceof Error ? err.message : String(err));
