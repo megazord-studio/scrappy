@@ -235,11 +235,16 @@ export async function runAgent(
     // Handle finish synchronously before dispatching parallel work
     const finishBlock = toolBlocks.find((b) => b.name === "finish");
     if (finishBlock) {
-      const minScrapes = Math.min(15, Math.floor(config.maxIterations * 0.6));
-      if (visitedUrls.size < minScrapes && iteration < config.maxIterations - 2) {
-        // Too early — reject finish and push the agent to keep exploring
-        log("log", { message: `Finish rejected (only ${visitedUrls.size} pages scraped). Continuing…` });
-        messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: finishBlock.id, content: `Not done yet — you have only scraped ${visitedUrls.size} pages. Keep exploring: follow the links from comparison sites to individual bank pages and extract their rates.` }] });
+      const minScrapes = Math.min(20, Math.floor(config.maxIterations * 0.75));
+      const tooFewScrapes = visitedUrls.size < minScrapes;
+      const tooFewRecords = allRecords.length < 5 && visitedUrls.size >= 5;
+      const notNearEnd = iteration < config.maxIterations - 3;
+      if ((tooFewScrapes || tooFewRecords) && notNearEnd) {
+        const reason = tooFewRecords
+          ? `only ${allRecords.length} records found so far — keep scraping more provider pages`
+          : `only ${visitedUrls.size} pages scraped out of expected ~${minScrapes}`;
+        log("log", { message: `Finish rejected (${reason}). Continuing…` });
+        messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: finishBlock.id, content: `Not done yet — ${reason}. Continue searching and scraping individual provider pages.` }] });
         continue;
       }
       const input = finishBlock.input as ToolInput;

@@ -127,7 +127,7 @@ function buildSystemPrompt(
       ? `\n\nAlready scraped — do not revisit:\n${[...visitedUrls].map((u) => `  ${u}`).join("\n")}`
       : "";
 
-  return `You are a structured data extraction agent. Your goal is to build a complete, accurate dataset about: "${config.topic}"
+  return `You are a structured data extraction agent. Your goal is to build a COMPLETE, accurate dataset about: "${config.topic}"
 
 ## Target schema
 ${fieldList}
@@ -138,8 +138,8 @@ ${fieldList}
 3. For each URL returned, call scrape_url.
 4. After EVERY scrape_url call, immediately call extract_structured_data with whatever records you found (pass an empty array if none — this is required).
 5. When scraping an aggregator or comparison page, collect all links to individual provider pages and scrape those next — provider pages are the authoritative source.
-6. Continue until all providers you have seen referenced have been scraped directly.
-7. Call finish when the dataset is complete.
+6. Continue searching and scraping until you have visited ALL providers you have seen referenced. Do not stop early — for most topics there are 20–50+ providers.
+7. Only call finish when you have exhausted all known provider pages and run additional searches to find any remaining ones.
 
 ## Rules
 - You MUST call extract_structured_data after every single scrape_url call — no exceptions
@@ -275,13 +275,19 @@ export async function runAgentOpenAI(
     // Handle finish before parallel dispatch
     const finishCall = toolCalls.find((tc) => tc.function.name === "finish");
     if (finishCall) {
-      const minScrapes = Math.min(15, Math.floor(config.maxIterations * 0.6));
-      if (visitedUrls.size < minScrapes && iteration < config.maxIterations - 2) {
-        log("log", { message: `Finish rejected (only ${visitedUrls.size} pages scraped). Continuing…` });
+      const minScrapes = Math.min(20, Math.floor(config.maxIterations * 0.75));
+      const tooFewScrapes = visitedUrls.size < minScrapes;
+      const tooFewRecords = allRecords.length < 5 && visitedUrls.size >= 5;
+      const notNearEnd = iteration < config.maxIterations - 3;
+      if ((tooFewScrapes || tooFewRecords) && notNearEnd) {
+        const reason = tooFewRecords
+          ? `only ${allRecords.length} records found so far — keep scraping more provider pages`
+          : `only ${visitedUrls.size} pages scraped out of expected ~${minScrapes}`;
+        log("log", { message: `Finish rejected (${reason}). Continuing…` });
         messages.push({
           role: "tool",
           tool_call_id: finishCall.id,
-          content: `Not done yet — only ${visitedUrls.size} pages scraped. Continue: follow links from aggregator pages to individual provider pages and extract their data.`,
+          content: `Not done yet — ${reason}. Continue searching and scraping individual provider pages.`,
         });
         continue;
       }
