@@ -37,7 +37,7 @@ PORT=3000
 npm run server
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open `http://localhost:3000` in your browser.
 
 ## Run your first index job
 
