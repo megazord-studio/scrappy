@@ -20,7 +20,6 @@
     "@fastify/static": "^9.0.0",
     "better-sqlite3": "^12.8.0",
     "commander": "^14.0.3",
-    "csv-writer": "^1.6.0",
     "dotenv": "^17.3.1",
     "fastify": "^5.8.2",
     "openai": "^6.32.0",

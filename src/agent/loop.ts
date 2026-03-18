@@ -3,13 +3,7 @@ import { searchGoogle } from "../tools/serp.js";
 import { scrapeUrl } from "../tools/crawl.js";
 import type { RunConfig, ExtractedRecord, EmitFn } from "../types.js";
 import type { LLMClient } from "./llm-client.js";
-
-const COMPARISON_DOMAINS = [
-  "finpension.ch", "moneyland.ch", "comparis.ch", "vermoegens-partner.ch",
-  "schwiizerfranke.ch", "evaluno.ch", "financescout24.ch", "moneypark.ch",
-  "hypotheke.ch", "kredite.ch", "toppreise.ch", "vermoegenszentrum.ch",
-  "123-pensionierung.ch", "kassentest.ch", "vorsorge-experten.ch",
-];
+import { COMPARISON_DOMAINS } from "../lib/domains.js";
 
 type ToolName =
   | "search_google"

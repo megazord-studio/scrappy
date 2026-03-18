@@ -6,19 +6,9 @@ import type { CsvRow, SchemaDefinition, EmitFn } from "../types.js";
 import type { LLMClient } from "../agent/llm-client.js";
 import { createRequire } from "module";
 import https from "https";
+import { isComparisonUrl } from "../lib/domains.js";
 const _require = createRequire(import.meta.url);
 const pdfParse = _require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
-
-const COMPARISON_DOMAINS = [
-  "finpension.ch", "moneyland.ch", "comparis.ch", "vermoegens-partner.ch",
-  "schwiizerfranke.ch", "evaluno.ch", "financescout24.ch", "moneypark.ch",
-  "hypotheke.ch", "kredite.ch", "toppreise.ch", "vermoegenszentrum.ch",
-  "123-pensionierung.ch", "kassentest.ch", "vorsorge-experten.ch",
-];
-
-function isComparisonUrl(url: string): boolean {
-  return COMPARISON_DOMAINS.some((d) => url.toLowerCase().includes(d));
-}
 
 function extractNums(s: string): number[] {
   return [...s.matchAll(/(\d+[.,]\d+|\d+)/g)]

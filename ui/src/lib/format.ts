@@ -5,15 +5,6 @@ export function timeAgo(iso: string): string {
   return `${Math.floor(diff / 3600000)}h ago`;
 }
 
-export function fmtElapsed(ms: number): string {
-  const s = Math.floor(ms / 1000);
-  const m = Math.floor(s / 60);
-  const h = Math.floor(m / 60);
-  if (h) return `${h}h ${m % 60}m`;
-  if (m) return `${m}m ${s % 60}s`;
-  return `${s}s`;
-}
-
 export function fmtK(n: number): string {
   return n >= 1000 ? (n / 1000).toFixed(0) + 'k' : String(n);
 }
@@ -28,11 +19,3 @@ export function shortUrl(url: string): string {
   }
 }
 
-export function esc(s: unknown): string {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
