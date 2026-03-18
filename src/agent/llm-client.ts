@@ -192,7 +192,7 @@ export function createZordMindClient(baseUrl: string, model: string): LLMClient 
   };
 }
 
-export function createOpenAIClient(apiKey: string, model = "gpt-4o", extractModel = "gpt-4o-mini"): OpenAILLMClient {
+export function createOpenAIClient(apiKey: string, model = "gpt-4.1", extractModel = "gpt-4.1-mini"): OpenAILLMClient {
   const client = new OpenAI({ apiKey });
 
   function toOpenAIMessages(

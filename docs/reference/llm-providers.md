@@ -17,8 +17,8 @@ Set `ANTHROPIC_API_KEY` in `.env`.
 
 | Role | Default model |
 |---|---|
-| Agent | `gpt-4o` |
-| Extract | `gpt-4o-mini` |
+| Agent | `gpt-4.1` |
+| Extract | `gpt-4.1-mini` |
 
 Set `OPENAI_KEY` in `.env`. You can override the model names in Settings.
 
@@ -40,8 +40,8 @@ In `data/settings.json`:
   "llmProvider": "anthropic",
   "anthropicAgentModel": "claude-opus-4-6",
   "anthropicExtractModel": "claude-haiku-4-5-20251001",
-  "openaiModel": "gpt-4o",
-  "openaiExtractModel": "gpt-4o-mini"
+  "openaiModel": "gpt-4.1",
+  "openaiExtractModel": "gpt-4.1-mini"
 }
 ```
 

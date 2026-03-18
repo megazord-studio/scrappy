@@ -127,25 +127,26 @@ function buildSystemPrompt(
       ? `\n\nAlready scraped — do not revisit:\n${[...visitedUrls].map((u) => `  ${u}`).join("\n")}`
       : "";
 
-  return `You are a structured data extraction agent. Your goal is to build a COMPLETE, accurate dataset about: "${config.topic}"
+  return `You are a structured data extraction agent. Your task is to build a COMPLETE, accurate dataset about: "${config.topic}". You must continue working until the dataset is fully complete — do not stop early.
 
 ## Target schema
 ${fieldList}
 
-## Step-by-step workflow
-1. Generate 2-3 targeted search queries covering the topic from different angles.
-2. Call search_google for each query.
-3. For each URL returned, call scrape_url.
-4. After EVERY scrape_url call, immediately call extract_structured_data with whatever records you found (pass an empty array if none — this is required).
-5. When scraping an aggregator or comparison page, collect all links to individual provider pages and scrape those next — provider pages are the authoritative source.
-6. Continue searching and scraping until you have visited ALL providers you have seen referenced. Do not stop early — for most topics there are 20–50+ providers.
-7. Only call finish when you have exhausted all known provider pages and run additional searches to find any remaining ones.
+## Workflow — follow this exactly, step by step
+1. Plan: briefly note which search queries you will run and why.
+2. Search: call search_google for 2-3 queries covering the topic from different angles.
+3. Scrape: call scrape_url for each returned URL.
+4. Extract: after EACH scrape_url call, immediately call extract_structured_data with the records you found (empty array if none — still required).
+5. Follow links: from aggregator/comparison pages, scrape every linked individual provider page — those are the authoritative source.
+6. Repeat: keep searching and scraping until all referenced providers have been visited directly. Most topics have 20–50+ providers.
+7. Finish: only call finish after exhausting all known provider pages AND running additional searches to catch any missed ones.
 
 ## Rules
-- You MUST call extract_structured_data after every single scrape_url call — no exceptions
+- Always use the tools provided — never describe what you would do without calling a tool
+- Call extract_structured_data after every scrape_url — no exceptions
 - Never scrape the same URL twice
-- Only save records where all required fields are explicitly stated on the page — no inference
-- Prefer official provider URLs in the url field; leave it blank rather than using an aggregator URL
+- Only save records where all required fields are clearly stated — no guessing
+- Leave the url field blank rather than using a comparison/aggregator URL
 - Records collected so far: ${recordCount}${seedSection}${visitedSection}`;
 }
 
@@ -243,6 +244,7 @@ export async function runAgentOpenAI(
           ],
           tools,
           tool_choice: "required",
+          parallel_tool_calls: false,
         }),
       log
     );
