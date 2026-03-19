@@ -31,6 +31,7 @@ class DashboardStore {
   recordsFile = $state<string | null>(null);
   recordsRefreshTick = $state(0);
   currentAction = $state<string>('waiting for your input');
+  navTarget = $state<string | null>(null);
 
   private activeStream: EventSource | null = null;
   private elapsedTimer: ReturnType<typeof setInterval> | null = null;
@@ -248,6 +249,7 @@ class DashboardStore {
           newValue,
           changed,
           ts: time,
+          dataset: this.state.job?.params.input as string | undefined,
         }, ...s.updateRows];
         s.updateDone = s.updateDone + 1;
         this.currentAction = changed

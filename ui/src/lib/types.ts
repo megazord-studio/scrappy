@@ -53,6 +53,7 @@ export interface UpdateRow {
   newValue: string;
   changed: boolean;
   ts: string;
+  dataset?: string;
 }
 
 export interface LogEntry {
@@ -106,7 +107,6 @@ export interface Settings {
   zordmindModel?: string;
   crawl4aiBase?: string;
   apiKey?: string;
-  allowedOrigins?: string;
   webhookUrl?: string;
 }
 

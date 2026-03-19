@@ -13,7 +13,6 @@ export interface Settings {
   zordmindModel: string;
   crawl4aiBase: string;
   apiKey: string;
-  allowedOrigins: string;
   webhookUrl: string;
 }
 
@@ -27,7 +26,6 @@ const DEFAULTS: Settings = {
   zordmindModel: "qwen3-32b",
   crawl4aiBase: process.env.CRAWL4AI_BASE ?? "https://crawl.naszilla.ch",
   apiKey: "",
-  allowedOrigins: "",
   webhookUrl: "",
 };
 

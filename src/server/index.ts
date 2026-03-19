@@ -1,7 +1,6 @@
 import "dotenv/config";
 import Fastify, { type FastifyRequest, type FastifyReply } from "fastify";
 import staticPlugin from "@fastify/static";
-import cors from "@fastify/cors";
 import { timingSafeEqual, randomBytes } from "crypto";
 import { resolve } from "path";
 import { createJob, getJob, listJobs, getJobEvents, type Job } from "./jobs.js";
@@ -15,19 +14,6 @@ import { seedSchemasFromFiles } from "./seed-schemas.js";
 
 const app = Fastify({ logger: false });
 
-app.register(cors, {
-  origin: (origin, cb) => {
-    const allowed = readSettings().allowedOrigins
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-    if (!origin || origin.startsWith("http://localhost") || origin.startsWith("http://127.0.0.1")) {
-      return cb(null, true);
-    }
-    cb(null, allowed.includes(origin));
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-});
 
 function requireApiKey(req: FastifyRequest, reply: FastifyReply): boolean {
   const settings = readSettings();
@@ -65,7 +51,7 @@ app.post("/settings", async (req) => {
   const body = req.body as Record<string, string>;
   const patch: Record<string, string> = {};
   const { llmProvider, anthropicAgentModel, anthropicExtractModel, openaiModel, openaiExtractModel,
-          zordmindUrl, zordmindModel, crawl4aiBase, allowedOrigins, webhookUrl } = body;
+          zordmindUrl, zordmindModel, crawl4aiBase, webhookUrl } = body;
   if (llmProvider === "anthropic" || llmProvider === "openai" || llmProvider === "zordmind") patch.llmProvider = llmProvider;
   if (anthropicAgentModel) patch.anthropicAgentModel = anthropicAgentModel;
   if (anthropicExtractModel) patch.anthropicExtractModel = anthropicExtractModel;
@@ -74,7 +60,6 @@ app.post("/settings", async (req) => {
   if (zordmindUrl) patch.zordmindUrl = zordmindUrl;
   if (zordmindModel) patch.zordmindModel = zordmindModel;
   if (crawl4aiBase) patch.crawl4aiBase = crawl4aiBase;
-  if (allowedOrigins !== undefined) patch.allowedOrigins = allowedOrigins;
   if (webhookUrl !== undefined) patch.webhookUrl = webhookUrl;
   return writeSettings(patch);
 });

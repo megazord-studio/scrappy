@@ -29,7 +29,7 @@ export default defineConfig({
       {
         text: 'Reference',
         items: [
-          { text: 'API & Webflow', link: '/reference/api' },
+          { text: 'API', link: '/reference/api' },
           { text: 'LLM Providers', link: '/reference/llm-providers' },
           { text: 'Architecture', link: '/reference/architecture' },
           { text: 'CLI', link: '/reference/cli' },

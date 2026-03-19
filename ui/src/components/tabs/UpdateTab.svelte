@@ -5,31 +5,37 @@
 
   const {
     schemas,
-    outputs,
+    selectedDataset,
     onStarted,
   }: {
     schemas: Array<{ id: string; display_name: string }>;
-    outputs: string[];
+    selectedDataset: string | null;
     onStarted?: () => void;
   } = $props();
 
-  let selectedInput = $state('');
   let selectedSchema = $state('');
   let filter = $state('');
   let loading = $state(false);
 
+  // Auto-select schema from the most recent job that used this dataset
   $effect(() => {
-    if (schemas.length && !selectedSchema) selectedSchema = schemas[0].id;
-  });
-  $effect(() => {
-    if (outputs.length && !selectedInput) selectedInput = outputs[0];
+    if (!schemas.length) return;
+    const lastJob = jobsStore.jobs.find(j =>
+      (j.params.output === selectedDataset || j.params.input === selectedDataset) && j.params.schema
+    );
+    if (!lastJob) {
+      if (!selectedSchema) selectedSchema = schemas[0].id;
+      return;
+    }
+    const found = schemas.find(s => s.id === lastJob.params.schema);
+    if (found) selectedSchema = found.id;
   });
 
   async function handleUpdate() {
-    if (!selectedInput) { alert('No dataset available'); return; }
+    if (!selectedDataset) { alert('No dataset selected'); return; }
     loading = true;
     const body: { input: string; schema: string; filter?: string } = {
-      input: selectedInput,
+      input: selectedDataset,
       schema: selectedSchema,
     };
     if (filter.trim()) body.filter = filter.trim();
@@ -44,36 +50,28 @@
 </script>
 
 <div class="inline-form">
-  <div class="field">
-    <label>Dataset</label>
-    <select bind:value={selectedInput}>
-      {#if outputs.length === 0}
-        <option value="">(no datasets yet)</option>
-      {:else}
-        {#each outputs as o}
-          <option value={o}>{o}</option>
+  {#if !selectedDataset}
+    <span style="font-size:0.75rem;color:#888">Select a dataset first</span>
+  {:else}
+    <div class="field">
+      <label>Schema</label>
+      <select bind:value={selectedSchema}>
+        {#each schemas as s}
+          <option value={s.id}>{s.display_name}</option>
         {/each}
-      {/if}
-    </select>
-  </div>
-  <div class="field">
-    <label>Schema</label>
-    <select bind:value={selectedSchema}>
-      {#each schemas as s}
-        <option value={s.id}>{s.display_name}</option>
-      {/each}
-    </select>
-  </div>
-  <div class="field grow">
-    <label>Filter provider <span style="color:#666">(optional)</span></label>
-    <input type="text" bind:value={filter} placeholder="e.g. viac or tellco" />
-  </div>
-  <div class="field submit">
-    <label>&nbsp;</label>
-    <button disabled={loading} onclick={handleUpdate}>
-      {loading ? '…' : '↻ Run'}
-    </button>
-  </div>
+      </select>
+    </div>
+    <div class="field grow">
+      <label>Filter provider <span style="color:#666">(optional)</span></label>
+      <input type="text" bind:value={filter} placeholder="e.g. viac or tellco" />
+    </div>
+    <div class="field submit">
+      <label>&nbsp;</label>
+      <button disabled={loading} onclick={handleUpdate}>
+        {loading ? '…' : '↻ Run'}
+      </button>
+    </div>
+  {/if}
 </div>
 
 <style>

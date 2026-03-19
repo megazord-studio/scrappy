@@ -13,7 +13,6 @@
   let zordmindModel = $state('');
   let crawl4aiBase = $state('');
   let apiKey = $state('');
-  let allowedOrigins = $state('');
   let webhookUrl = $state('');
   let copied = $state(false);
   let statusText = $state('');
@@ -34,7 +33,6 @@
     zordmindModel = s.zordmindModel ?? '';
     crawl4aiBase = s.crawl4aiBase ?? '';
     apiKey = s.apiKey ?? '';
-    allowedOrigins = s.allowedOrigins ?? '';
     webhookUrl = s.webhookUrl ?? '';
     statusText = '';
   }
@@ -49,7 +47,6 @@
       zordmindUrl: zordmindUrl.trim(),
       zordmindModel: zordmindModel.trim(),
       crawl4aiBase: crawl4aiBase.trim(),
-      allowedOrigins: allowedOrigins.trim(),
       webhookUrl: webhookUrl.trim(),
     };
     const res = await saveSettings(body);
@@ -120,7 +117,7 @@
       <input id="zm-model" type="text" bind:value={zordmindModel} placeholder="qwen3-32b" />
     {/if}
 
-    <div class="section-divider">API / Webflow</div>
+    <div class="section-divider">API</div>
 
     <label>API Key <span class="hint">(required to trigger jobs remotely)</span></label>
     <div class="api-key-row">
@@ -129,9 +126,6 @@
         {copied ? '✓' : 'Copy'}
       </button>
     </div>
-
-    <label for="allowed-origins">Allowed origins <span class="hint">(comma-separated, for CORS)</span></label>
-    <input id="allowed-origins" type="text" bind:value={allowedOrigins} placeholder="https://mysite.webflow.io, https://mysite.com" />
 
     <label for="webhook-url">Webhook URL <span class="hint">(called when a job finishes)</span></label>
     <input id="webhook-url" type="text" bind:value={webhookUrl} placeholder="https://hooks.zapier.com/..." />
@@ -152,14 +146,14 @@
   }
   .hint {
     font-weight: normal;
-    color: #777;
+    color: #999;
     font-size: 0.75em;
   }
   .section-divider {
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #666;
+    color: #888;
     border-top: 1px solid #2a2a2a;
     padding-top: 0.75rem;
     margin: 0.75rem 0 0.5rem;

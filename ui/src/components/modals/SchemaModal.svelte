@@ -122,7 +122,7 @@
 
     <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
       <div style="flex:1">
-        <label>ID <span style="font-weight:normal;color:#555">(slug, no spaces)</span></label>
+        <label>ID <span style="font-weight:normal;color:#888">(slug, no spaces)</span></label>
         <input type="text" bind:value={id} placeholder="fitnesscenter" disabled={idDisabled} />
       </div>
       <div style="flex:1">
@@ -157,7 +157,7 @@
             /> opt
           </label>
           <button
-            style="all:unset;color:#555;font-size:1rem;cursor:pointer;padding:0.25rem 0.3rem;line-height:1"
+            style="all:unset;color:#777;font-size:1rem;cursor:pointer;padding:0.25rem 0.3rem;line-height:1"
             title="Remove field"
             onclick={() => removeField(i)}
           >✕</button>
@@ -170,7 +170,7 @@
 
     <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
       <div style="flex:1">
-        <label>Dedupe key <span style="font-weight:normal;color:#555">(comma-separated field names)</span></label>
+        <label>Dedupe key <span style="font-weight:normal;color:#888">(comma-separated field names)</span></label>
         <input type="text" bind:value={dedupeKey} placeholder="centerName,aboName" />
       </div>
       <div style="flex:1">
@@ -179,10 +179,10 @@
       </div>
     </div>
 
-    <label>Tracked fields <span style="font-weight:normal;color:#555">(comma-separated)</span></label>
+    <label>Tracked fields <span style="font-weight:normal;color:#888">(comma-separated)</span></label>
     <input type="text" bind:value={rateFields} placeholder="preis" style="margin-bottom:0.75rem" />
 
-    <label>Naming rules <span style="font-weight:normal;color:#555">(one per line, guides LLM on name normalisation)</span></label>
+    <label>Naming rules <span style="font-weight:normal;color:#888">(one per line, guides LLM on name normalisation)</span></label>
     <textarea
       bind:value={namingRules}
       rows="3"

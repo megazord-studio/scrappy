@@ -39,5 +39,4 @@ Click the gear icon in the header to configure:
 - **LLM provider** — Anthropic / OpenAI / ZordMind
 - **Agent model and extract model** per provider
 - **API key** — read-only display with copy button; required to trigger jobs via the REST API
-- **Allowed origins** — comma-separated list of origins allowed for CORS (for Webflow or other external integrations)
 - **Webhook URL** — called when a job finishes (POST with job result)

@@ -18,6 +18,7 @@
     mergeBtnBg: string;
     mergeBtnBorder: string;
     isFirstOfGroup: boolean;
+    groupSize: number;
   }
 
   let headers = $state<string[]>([]);
@@ -27,6 +28,14 @@
   let dupTotalRows = $state(0);
   let loading = $state(false);
   let error = $state<string | null>(null);
+
+  function cellClass(h: string): string {
+    if (h === '_dataSource') return 'col-source';
+    if (h.startsWith('_')) return 'col-system';
+    if (/url/i.test(h)) return 'col-url';
+    if (/zins|rate|rendite|ter|preis|ertrag/i.test(h)) return 'col-rate';
+    return 'col-data';
+  }
 
   const GROUP_BORDER_COLORS = ['#ffb74d', '#4fc3f7', '#81c784', '#f06292', '#ce93d8'];
 
@@ -116,6 +125,7 @@
           mergeBtnBg,
           mergeBtnBorder,
           isFirstOfGroup,
+          groupSize: isFirstOfGroup ? groupIndices!.length : 0,
         });
       }
 
@@ -181,22 +191,20 @@
 {:else if !file || headers.length === 0}
   <div class="dash-empty" style="height:200px">No records yet</div>
 {:else}
-  <div style="display:flex;align-items:center;gap:0.75rem;margin-bottom:0.5rem;flex-wrap:wrap">
-    <span style="font-size:0.72rem;color:#444;font-family:monospace">{rowCount} records · {file}</span>
+  <div class="records-meta">
+    <span class="records-meta-count">{rowCount}<span class="records-meta-label"> records</span></span>
+    <span class="records-meta-file">{file}</span>
     {#if dupGroupCount > 0}
-      <span style="color:#ffb74d;font-size:0.7rem;font-family:monospace">
-        {dupGroupCount} dup group{dupGroupCount > 1 ? 's' : ''} · {dupTotalRows} rows
-      </span>
+      <span class="records-meta-dup">{dupGroupCount} dup{dupGroupCount > 1 ? 's' : ''} · {dupTotalRows} rows</span>
     {/if}
-    <a class="dl-link" href="/outputs/{file}" style="margin-left:auto">↓ Download CSV</a>
+    <a class="dl-link" href="/outputs/{file}" style="margin-left:auto">↓ csv</a>
   </div>
   <div class="records-scroll records-wrap">
     <table class="records-table">
       <thead>
         <tr>
-          <th>Dup</th>
           {#each headers as h}
-            <th>{h}</th>
+            <th class={cellClass(h)}>{h.startsWith('_') ? h.slice(1) : h}</th>
           {/each}
         </tr>
       </thead>
@@ -206,29 +214,38 @@
           const key = [...dr.allGroupIds].sort((a, b) => a - b).join(',');
           return !dismissedGroups.has(key);
         }) as dr (dr.origIdx)}
-          <tr style={dr.borderColor ? `border-left:2px solid ${dr.borderColor};background:${dr.borderColor}0d` : ''}>
-            <td style="text-align:center;white-space:nowrap;vertical-align:middle">
-              {@html dupScaleHtml(dr.rowScore)}
-              {#if dr.isFirstOfGroup && dr.mergeKeepId !== null}
-                <div style="margin-top:0.2rem;display:flex;gap:0.2rem">
-                  <button
-                    onclick={() => handleMerge(dr.mergeKeepId!, dr.mergeRemoveIds)}
-                    style="padding:0.2rem 0.35rem;font-size:0.85rem;line-height:1;background:{dr.mergeBtnBg};color:{dr.mergeBtnColor};border:1px solid {dr.mergeBtnBorder};border-radius:3px;cursor:pointer"
-                    title="Merge ({dr.mergeConfidence})"
-                  >⇢</button>
-                  <button
-                    onclick={() => handleNotDuplicate(dr.allGroupIds)}
-                    style="padding:0.2rem 0.35rem;font-size:0.85rem;line-height:1;background:#1a1a1a;color:#555;border:1px solid #2a2a2a;border-radius:3px;cursor:pointer"
-                    title="Not a duplicate — dismiss this group"
-                  >✕</button>
+          {#if dr.isFirstOfGroup && dr.mergeKeepId !== null}
+            <tr class="dup-group-header" style="--group-color:{dr.borderColor}">
+              <td colspan={headers.length}>
+                <div class="dup-header-inner">
+                  <span class="dup-conf-badge {dr.mergeConfidence}">{dr.mergeConfidence}</span>
+                  <span class="dup-group-desc">{dr.groupSize} rows</span>
+                  <span class="dup-score-inline">{@html dupScaleHtml(dr.rowScore)}</span>
+                  <div class="dup-header-actions">
+                    <button
+                      class="dup-action-btn merge {dr.mergeConfidence}"
+                      onclick={() => handleMerge(dr.mergeKeepId!, dr.mergeRemoveIds)}
+                    >Merge → keep best</button>
+                    <button
+                      class="dup-action-btn dismiss"
+                      onclick={() => handleNotDuplicate(dr.allGroupIds)}
+                    >Keep separate</button>
+                  </div>
                 </div>
-              {/if}
-            </td>
+              </td>
+            </tr>
+          {/if}
+          <tr class="data-row" style={dr.borderColor ? `--group-color:${dr.borderColor}` : ''} class:in-group={!!dr.borderColor}>
             {#each headers as h}
-              <td
-                class={h === '_dataSource' ? (dr.row[h] === 'official' ? 'source-official' : 'source-comparison') : ''}
-                title={dr.row[h] ?? ''}
-              >{dr.row[h] ?? ''}</td>
+              {#if h === '_dataSource'}
+                <td class="col-source">
+                  {#if dr.row[h]}
+                    <span class="source-badge {dr.row[h]}">{dr.row[h]}</span>
+                  {/if}
+                </td>
+              {:else}
+                <td class={cellClass(h)} title={dr.row[h] ?? ''}>{dr.row[h] ?? ''}</td>
+              {/if}
             {/each}
           </tr>
         {/each}
@@ -236,3 +253,106 @@
     </table>
   </div>
 {/if}
+
+<style>
+  /* Meta bar */
+  .records-meta {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+  }
+  .records-meta-count { color: #d0d0d0; font-weight: 600; }
+  .records-meta-label { color: #666; font-weight: 400; }
+  .records-meta-file {
+    color: #555;
+    padding-left: 0.4rem;
+    border-left: 1px solid #2a2a2a;
+  }
+  .records-meta-dup { color: #f59e0b; }
+
+  /* Duplicate group header row */
+  .dup-group-header td {
+    padding: 0.4rem 0.55rem 0.35rem !important;
+    background: color-mix(in srgb, var(--group-color) 6%, #0d0d0d) !important;
+    border-top: 1px solid color-mix(in srgb, var(--group-color) 20%, transparent);
+    border-bottom: none !important;
+  }
+  .dup-header-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-family: "IBM Plex Mono", monospace;
+  }
+  .dup-conf-badge {
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.1rem 0.35rem;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .dup-conf-badge.exact   { background: #0d2a0d; color: #4caf50; border: 1px solid #1a4a1a; }
+  .dup-conf-badge.likely  { background: #2a1e08; color: #f59e0b; border: 1px solid #4a350a; }
+  .dup-conf-badge.possible { background: #1a1a1a; color: #888; border: 1px solid #333; }
+
+  .dup-group-desc {
+    font-size: 0.65rem;
+    color: #666;
+    flex-shrink: 0;
+  }
+  .dup-score-inline {
+    display: flex;
+    align-items: center;
+    gap: 1px;
+    flex-shrink: 0;
+  }
+
+  .dup-header-actions {
+    display: flex;
+    gap: 0.4rem;
+    margin-left: auto;
+    flex-shrink: 0;
+  }
+  .dup-action-btn {
+    all: unset;
+    cursor: pointer;
+    font-size: 0.65rem;
+    font-family: "IBM Plex Mono", monospace;
+    padding: 0.2rem 0.55rem;
+    border-radius: 2px;
+    border: 1px solid;
+    line-height: 1.4;
+    transition: opacity 0.15s;
+  }
+  .dup-action-btn:hover { opacity: 0.8; }
+  .dup-action-btn.merge.exact   { color: #4caf50; background: #0d2a0d; border-color: #2a5a2a; }
+  .dup-action-btn.merge.likely  { color: #f59e0b; background: #2a1e08; border-color: #5a3a08; }
+  .dup-action-btn.merge.possible { color: #aaa; background: #1a1a1a; border-color: #3a3a3a; }
+  .dup-action-btn.dismiss { color: #666; background: #111; border-color: #272727; }
+  .dup-action-btn.dismiss:hover { color: #aaa; opacity: 1; border-color: #444; }
+
+  /* Row group coloring */
+  .data-row.in-group td {
+    background: color-mix(in srgb, var(--group-color) 3%, transparent);
+  }
+  .data-row.in-group td:first-child {
+    box-shadow: inset 2px 0 0 var(--group-color);
+  }
+
+  /* Source badge */
+  .source-badge {
+    display: inline-block;
+    padding: 0.08rem 0.3rem;
+    border-radius: 2px;
+    font-size: 0.58rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .source-badge.official   { background: #0a2018; color: #34d399; }
+  .source-badge.comparison { background: #1e1508; color: #f59e0b; }
+</style>
