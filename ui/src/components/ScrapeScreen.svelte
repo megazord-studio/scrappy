@@ -212,7 +212,7 @@
     flex-direction: column;
     border-right: 1px solid #1e1e1e;
     margin-right: 1.1rem;
-    padding-right: 0.85rem;
+    padding: 0.75rem 0.85rem 0.75rem 0.75rem;
     font-family: "IBM Plex Mono", "Fira Code", monospace;
     background: #171717;
     overflow: hidden;
