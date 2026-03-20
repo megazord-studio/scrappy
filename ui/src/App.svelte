@@ -57,7 +57,7 @@
 {#if screen === 'monitor'}
   <MonitorScreen />
 {:else if screen === 'datasets'}
-  <DatasetsScreen {outputs} />
+  <DatasetsScreen {outputs} {schemas} />
 {:else}
   <ScrapeScreen
     {schemas}
