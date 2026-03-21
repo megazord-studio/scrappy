@@ -127,7 +127,7 @@
             class:ds-card--active={selectedDataset === name}
             onclick={() => handleSelectDataset(name)}
           >
-            <div class="ds-card-icon">{name.slice(0,2).toUpperCase()}</div>
+            <span class="ds-card-dot"></span>
             <div class="ds-card-name">{name}</div>
             <div class="ds-card-acts">
               <button
@@ -172,14 +172,11 @@
         <!-- Top bar -->
         <div class="ds-topbar">
           <div class="ds-topbar-left">
-            <div class="ds-topbar-icon">{selectedDataset.slice(0,2).toUpperCase()}</div>
-            <div>
-              <div class="ds-topbar-name">{selectedDataset}</div>
-            </div>
+            <div class="ds-topbar-name">{selectedDataset}</div>
           </div>
           <div class="ds-topbar-actions">
             <button class="ds-btn ds-btn--update" class:ds-btn--active={activePanel === 'update'} onclick={() => { activePanel = activePanel === 'update' ? null : 'update'; }}>↻ Update</button>
-            <button class="ds-btn ds-btn--index" class:ds-btn--active={activePanel === 'index'} onclick={() => { activePanel = activePanel === 'index' ? null : 'index'; }}>+ New Dataset</button>
+            <button class="ds-btn ds-btn--index" class:ds-btn--active={activePanel === 'index'} onclick={() => { activePanel = activePanel === 'index' ? null : 'index'; }}>+ New Index</button>
             <a class="ds-btn" href="/outputs/{selectedDataset}" download>↓ Export CSV</a>
           </div>
         </div>
@@ -248,6 +245,7 @@
         {/if}
 
         <!-- Records -->
+        <div class="ds-section-label">Records</div>
         <div class="records-card">
           <RecordsTab file={selectedDataset} refreshTick={recordsTick} />
         </div>
@@ -258,10 +256,7 @@
             <span class="ds-chat-icon">✦</span>
             <span class="ds-chat-title">Ask about this dataset</span>
           </div>
-          <div class="ds-chat-msgs">
-            {#if chatHistory.length === 0}
-              <div class="ds-chat-empty">Ask about trends, anomalies, or what to track next.</div>
-            {/if}
+          <div class="ds-chat-msgs" class:ds-chat-msgs--empty={chatHistory.length === 0 && !chatLoading}>
             {#each chatHistory as msg}
               {#if msg.role === 'user'}
                 <div class="ds-chat-bubble-user">{msg.content}</div>
@@ -283,7 +278,7 @@
             <input
               class="ds-chat-input"
               bind:value={chatInput}
-              placeholder="Message Scrappy…"
+              placeholder="Ask about trends, anomalies, or what to track next…"
               onkeydown={(e) => { if (e.key === 'Enter') sendChatMsg(); }}
               disabled={chatLoading}
             />
@@ -383,22 +378,16 @@
     background: #f0fdff;
   }
 
-  .ds-card-icon {
-    width: 32px;
-    height: 32px;
-    background: #0e0d0b;
-    border-radius: 7px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 0.7rem;
-    color: #f5f3ee;
+  .ds-card-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #d0cec8;
     flex-shrink: 0;
-    letter-spacing: 0.02em;
+    transition: background 0.12s;
   }
-  .ds-card--active .ds-card-icon { background: #22d3ee; color: #000; }
+  .ds-card--active .ds-card-dot { background: #22d3ee; }
+  .ds-card:hover:not(.ds-card--active) .ds-card-dot { background: #b0aea8; }
 
   .ds-card-name {
     font-size: 0.85rem;
@@ -528,22 +517,6 @@
     gap: 0.85rem;
   }
 
-  .ds-topbar-icon {
-    width: 40px;
-    height: 40px;
-    background: #0e0d0b;
-    border-radius: 9px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 0.78rem;
-    color: #f5f3ee;
-    flex-shrink: 0;
-    letter-spacing: 0.02em;
-  }
-
   .ds-topbar-name {
     font-family: 'Syne', sans-serif;
     font-weight: 800;
@@ -655,6 +628,17 @@
   .ds-submit:disabled { opacity: 0.4; cursor: not-allowed; }
   .ds-submit--teal { background: #22d3ee; color: #0e0d0b; }
 
+  /* Section label above records */
+  .ds-section-label {
+    font-family: 'Syne', sans-serif;
+    font-weight: 700;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #9b9892;
+    padding: 0.75rem 0.25rem 0.4rem;
+  }
+
   /* Records card wrapper */
   .records-card {
     border-radius: 10px;
@@ -686,10 +670,7 @@
     max-height: 220px; overflow-y: auto;
     scrollbar-width: thin; scrollbar-color: #e2e0db transparent;
   }
-  .ds-chat-empty {
-    font-size: 0.82rem; color: #9b9892; text-align: center;
-    padding: 0.5rem 0; font-family: 'DM Sans', sans-serif;
-  }
+  .ds-chat-msgs--empty { padding: 0; max-height: 0; overflow: hidden; }
   .ds-chat-bubble-user {
     align-self: flex-end; max-width: 80%;
     background: #f0f9ff; border: 1px solid #bae6fd;

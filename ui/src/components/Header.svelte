@@ -110,18 +110,11 @@
     text-overflow: ellipsis;
   }
 
-  /* Light theme (Datasets screen) */
-  .app-header--light {
-    background: #f5f3ee;
-    border-bottom-color: #dddbd5;
-  }
-  .app-header--light :global(h1) { color: #0e0d0b; }
-  .app-header--light .nav-link { color: #6b6860; }
-  .app-header--light .nav-link:hover { color: #0e0d0b; background: #ece9e3; }
-  .app-header--light .nav-link.active { color: #0e7490; background: #cffafe; }
-  .app-header--light .docs-link { color: #9b9892; }
-  .app-header--light .docs-link:hover { color: #0e0d0b; }
-  .app-header--light .gear-btn { color: #6b6860; }
-  .app-header--light .gear-btn:hover { color: #0e0d0b; }
-  .app-header--light .running-label { color: #16a34a; }
+  /* Light theme nav overrides — background handled globally in app.css */
+  :global(.app-header--light) .nav-link { color: #6b6860; }
+  :global(.app-header--light) .nav-link:hover { color: #0e0d0b; background: #ece9e3; }
+  :global(.app-header--light) .nav-link.active { color: #0e7490; background: #cffafe; }
+  :global(.app-header--light) .docs-link { color: #9b9892; }
+  :global(.app-header--light) .docs-link:hover { color: #0e0d0b; }
+  :global(.app-header--light) .running-label { color: #16a34a; }
 </style>

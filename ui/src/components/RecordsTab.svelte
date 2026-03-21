@@ -197,7 +197,6 @@
     {#if dupGroupCount > 0}
       <span class="records-meta-dup">{dupGroupCount} dup{dupGroupCount > 1 ? 's' : ''} · {dupTotalRows} rows</span>
     {/if}
-    <a class="dl-link" href="/outputs/{file}" style="margin-left:auto">↓ csv</a>
   </div>
   <div class="records-scroll records-wrap">
     <table class="records-table">
