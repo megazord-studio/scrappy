@@ -8,11 +8,27 @@
   import { dashStore } from './stores/dashboard.svelte';
   import { getSchemas, getOutputs, getSettings } from './lib/api';
 
-  let screen = $state<'monitor' | 'datasets'>('monitor');
+  function parseHash(): 'monitor' | 'datasets' {
+    const h = window.location.hash.slice(1);
+    return h === 'datasets' ? 'datasets' : 'monitor';
+  }
+
+  function navigate(s: 'monitor' | 'datasets') {
+    screen = s;
+    window.location.hash = s;
+  }
+
+  let screen = $state<'monitor' | 'datasets'>(parseHash());
+
+  $effect(() => {
+    function onHashChange() { screen = parseHash(); }
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  });
 
   $effect(() => {
     if (dashStore.navTarget) {
-      screen = 'datasets';
+      navigate('datasets');
       dashStore.navTarget = null;
     }
   });
@@ -47,7 +63,8 @@
 
 <Header
   {screen}
-  onScreenChange={(s) => { screen = s; }}
+  theme={screen === 'datasets' ? 'light' : 'dark'}
+  onScreenChange={(s) => { navigate(s); }}
   onOpenSettings={() => { settingsOpen = true; }}
 />
 

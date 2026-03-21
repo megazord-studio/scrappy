@@ -189,7 +189,7 @@
         <div class="ds-job-banner">
           <span class="ds-job-dot running"></span>
           {activeJob.type === 'index' ? 'Indexing' : 'Updating'} dataset…
-          <a href="/app" class="ds-job-link">Watch in Monitor →</a>
+          <a href="#monitor" class="ds-job-link">Watch in Monitor →</a>
         </div>
         {/if}
 
@@ -287,7 +287,7 @@
               onkeydown={(e) => { if (e.key === 'Enter') sendChatMsg(); }}
               disabled={chatLoading}
             />
-            <button class="ds-chat-send" onclick={sendChatMsg} disabled={chatLoading || !chatInput.trim()}>↑</button>
+            <button class="ds-chat-send" aria-label="Send message" onclick={sendChatMsg} disabled={chatLoading || !chatInput.trim()}>↑</button>
           </div>
         </div>
 

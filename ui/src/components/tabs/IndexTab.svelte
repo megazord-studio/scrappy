@@ -22,6 +22,7 @@
   let seedUrls = $state('');
   let seedModalOpen = $state(false);
   let loading = $state(false);
+  let topicError = $state('');
 
   $effect(() => {
     if (schemas.length && !selectedSchema) selectedSchema = schemas[0].id;
@@ -34,7 +35,8 @@
   const seedCount = $derived(seedUrls.split('\n').map(s => s.trim()).filter(Boolean).length);
 
   async function handleIndex() {
-    if (!topic.trim()) { alert('Enter a topic'); return; }
+    if (!topic.trim()) { topicError = 'Enter a topic'; return; }
+    topicError = '';
     loading = true;
     const cleanOutput = output.trim().replace(/\.csv$/i, '') || 'results';
     const cleanSeedUrls = seedUrls.split('\n').map(s => s.trim()).filter(Boolean).join(',');
@@ -57,7 +59,8 @@
 <div class="inline-form">
   <div class="field grow2">
     <label>Topic</label>
-    <input type="text" bind:value={topic} placeholder="3A Fonds Konto Schweiz Zinssatz" />
+    <input type="text" bind:value={topic} placeholder="3A Fonds Konto Schweiz Zinssatz" oninput={() => topicError = ''} />
+    {#if topicError}<span class="field-error">{topicError}</span>{/if}
   </div>
   <div class="field">
     <label>Schema</label>
@@ -84,7 +87,7 @@
     <label>&nbsp;</label>
     <div style="display:flex;gap:0.35rem">
       <button class="seed-btn" class:has-seeds={seedCount > 0} onclick={() => seedModalOpen = true} title="Seed URLs">
-        🌱 Seeds{#if seedCount > 0}<span class="seed-count">{seedCount}</span>{/if}
+        ⊕ Seeds{#if seedCount > 0}<span class="seed-count">{seedCount}</span>{/if}
       </button>
       <button disabled={loading} onclick={handleIndex}>
         {loading ? '…' : '▶ Run'}
@@ -128,6 +131,7 @@
   label { font-size: 0.68rem; color: #888; margin: 0; }
   input, select { margin: 0; }
   button { margin: 0; white-space: nowrap; }
+  .field-error { font-size: 0.65rem; color: #f87171; margin-top: 0.1rem; }
 
   .seed-btn {
     background: #111;

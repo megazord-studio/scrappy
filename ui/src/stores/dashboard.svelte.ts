@@ -37,10 +37,6 @@ class DashboardStore {
   private elapsedTimer: ReturnType<typeof setInterval> | null = null;
   private recordsTimer: ReturnType<typeof setInterval> | null = null;
 
-  elapsed = $derived(
-    this.jobStartedAt ? Math.floor((Date.now() - this.jobStartedAt.getTime()) / 1000) : null
-  );
-
   async openJob(id: string) {
     jobsStore.select(id);
     await jobsStore.refresh();

@@ -32,7 +32,7 @@
   });
 
   async function handleUpdate() {
-    if (!selectedDataset) { alert('No dataset selected'); return; }
+    if (!selectedDataset) return;
     loading = true;
     const body: { input: string; schema: string; filter?: string } = {
       input: selectedDataset,

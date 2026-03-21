@@ -4,10 +4,12 @@
 
   const {
     screen,
+    theme = 'dark',
     onScreenChange,
     onOpenSettings,
   }: {
     screen: 'monitor' | 'datasets';
+    theme?: 'dark' | 'light';
     onScreenChange: (s: 'monitor' | 'datasets') => void;
     onOpenSettings: () => void;
   } = $props();
@@ -22,7 +24,7 @@
   );
 </script>
 
-<div class="app-header">
+<div class="app-header" class:app-header--light={theme === 'light'}>
   <div style="display:flex;align-items:center;gap:1.5rem">
     <div class="brand">
       <BotIcon size={18} color="#00bcd4" strokeWidth={1.75} />
@@ -107,4 +109,19 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+
+  /* Light theme (Datasets screen) */
+  .app-header--light {
+    background: #f5f3ee;
+    border-bottom-color: #dddbd5;
+  }
+  .app-header--light :global(h1) { color: #0e0d0b; }
+  .app-header--light .nav-link { color: #6b6860; }
+  .app-header--light .nav-link:hover { color: #0e0d0b; background: #ece9e3; }
+  .app-header--light .nav-link.active { color: #0e7490; background: #cffafe; }
+  .app-header--light .docs-link { color: #9b9892; }
+  .app-header--light .docs-link:hover { color: #0e0d0b; }
+  .app-header--light .gear-btn { color: #6b6860; }
+  .app-header--light .gear-btn:hover { color: #0e0d0b; }
+  .app-header--light .running-label { color: #16a34a; }
 </style>

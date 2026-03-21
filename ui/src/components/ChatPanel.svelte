@@ -100,7 +100,7 @@
       rows="1"
       disabled={loading}
     ></textarea>
-    <button class="chat-send" onclick={send} disabled={loading || !input.trim()} title="Send (Enter)">
+    <button class="chat-send" aria-label="Send message" onclick={send} disabled={loading || !input.trim()} title="Send (Enter)">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M8 13V3M3 8l5-5 5 5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
