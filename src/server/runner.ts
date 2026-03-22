@@ -94,9 +94,11 @@ export async function runUpdateJob(job: Job): Promise<void> {
     const schemaDef = loadSchema(schema);
     const dataset = input.replace(/\.csv$/i, "");
 
+    const recordIds = job.params.recordId ? [Number(job.params.recordId)] : undefined;
     await runUpdate(dataset, schemaDef, llmClient, settings.crawl4aiBase, {
       signal: job.abortController.signal,
       filter: job.params.filter,
+      recordIds,
       serpApiKey: SERPAPI_KEY,
       emit,
     });

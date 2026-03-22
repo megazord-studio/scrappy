@@ -57,6 +57,7 @@ export async function startUpdateJob(body: {
   input: string;
   schema: string;
   filter?: string;
+  recordId?: number;
 }): Promise<{ id: string; error?: string }> {
   return apiFetch('/jobs/update', {
     method: 'POST',
@@ -114,6 +115,14 @@ export async function markNotDuplicate(file: string, ids: number[]): Promise<Res
 
 export async function dedupeOutput(file: string): Promise<void> {
   await apiFetch(`/outputs/${file}/dedupe`, { method: 'POST' });
+}
+
+export async function deleteRecords(file: string, ids: number[]): Promise<void> {
+  await apiFetch(`/outputs/${file}/records`, {
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ ids }),
+  });
 }
 
 export async function deleteOutput(file: string): Promise<void> {

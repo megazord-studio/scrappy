@@ -75,7 +75,7 @@
     <input type="text" bind:value={output} placeholder="results" list="index-dataset-list" autocomplete="off" />
     <datalist id="index-dataset-list">
       {#each outputs as o}
-        <option value={o} />
+        <option value={o}></option>
       {/each}
     </datalist>
   </div>

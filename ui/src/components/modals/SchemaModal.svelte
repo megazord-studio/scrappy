@@ -115,6 +115,7 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class="modal-backdrop" class:open onclick={handleBackdropClick}>
   <div class="schema-modal">
 
@@ -132,12 +133,12 @@
         </div>
         <div class="sm-row-2">
           <div class="sm-field">
-            <label class="sm-label">ID <span class="sm-hint">slug, no spaces</span></label>
-            <input class="sm-input" type="text" bind:value={id} placeholder="3a-konto" disabled={idDisabled} />
+            <label class="sm-label" for="sm-id">ID <span class="sm-hint">slug, no spaces</span></label>
+            <input id="sm-id" class="sm-input" type="text" bind:value={id} placeholder="3a-konto" disabled={idDisabled} />
           </div>
           <div class="sm-field">
-            <label class="sm-label">Display name</label>
-            <input class="sm-input" type="text" bind:value={displayName} placeholder="3a Konto" />
+            <label class="sm-label" for="sm-display-name">Display name</label>
+            <input id="sm-display-name" class="sm-input" type="text" bind:value={displayName} placeholder="3a Konto" />
           </div>
         </div>
       </section>
@@ -189,16 +190,16 @@
         </div>
         <div class="sm-row-3">
           <div class="sm-field">
-            <label class="sm-label">URL field</label>
-            <input class="sm-input" type="text" bind:value={urlField} placeholder="url" />
+            <label class="sm-label" for="sm-url-field">URL field</label>
+            <input id="sm-url-field" class="sm-input" type="text" bind:value={urlField} placeholder="url" />
           </div>
           <div class="sm-field">
-            <label class="sm-label">Dedupe key <span class="sm-hint">comma-separated</span></label>
-            <input class="sm-input" type="text" bind:value={dedupeKey} placeholder="bankName, kontoName" />
+            <label class="sm-label" for="sm-dedupe-key">Dedupe key <span class="sm-hint">comma-separated</span></label>
+            <input id="sm-dedupe-key" class="sm-input" type="text" bind:value={dedupeKey} placeholder="bankName, kontoName" />
           </div>
           <div class="sm-field">
-            <label class="sm-label">Tracked fields <span class="sm-hint">monitored for changes</span></label>
-            <input class="sm-input" type="text" bind:value={rateFields} placeholder="zins, ter" />
+            <label class="sm-label" for="sm-rate-fields">Tracked fields <span class="sm-hint">monitored for changes</span></label>
+            <input id="sm-rate-fields" class="sm-input" type="text" bind:value={rateFields} placeholder="zins, ter" />
           </div>
         </div>
       </section>

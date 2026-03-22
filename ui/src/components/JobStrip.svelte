@@ -24,22 +24,24 @@
       <span class="strip-empty">No jobs</span>
     {:else}
       {#each jobsStore.jobs as j (j.id)}
-        <button
-          class="strip-job"
-          class:selected={j.id === jobsStore.selectedJobId}
-          onclick={() => dashStore.openJob(j.id)}
-          title={label(j)}
-        >
-          {#if j.status === 'running'}
-            <span class="spinner"></span>
-          {/if}
-          <span class="strip-label">{label(j)}</span>
-          <span class="badge {j.status}">{j.status}</span>
-          <span class="strip-age">{timeAgo(j.startedAt)}</span>
+        <div class="strip-job-wrap">
+          <button
+            class="strip-job"
+            class:selected={j.id === jobsStore.selectedJobId}
+            onclick={() => dashStore.openJob(j.id)}
+            title={label(j)}
+          >
+            {#if j.status === 'running'}
+              <span class="spinner"></span>
+            {/if}
+            <span class="strip-label">{label(j)}</span>
+            <span class="badge {j.status}">{j.status}</span>
+            <span class="strip-age">{timeAgo(j.startedAt)}</span>
+          </button>
           {#if j.status === 'running'}
             <button class="cancel-btn" onclick={(e) => handleCancel(j.id, e)} title="Cancel">×</button>
           {/if}
-        </button>
+        </div>
       {/each}
     {/if}
   </div>
@@ -70,6 +72,12 @@
     color: #666;
     font-family: monospace;
   }
+  .strip-job-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
+
   .strip-job {
     all: unset;
     cursor: pointer;

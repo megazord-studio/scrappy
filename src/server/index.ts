@@ -8,7 +8,7 @@ import { dbClearJobs } from "./db.js";
 import { listSchemas, listOutputs, runIndexJob, runUpdateJob, getLLMClient } from "./runner.js";
 import { readSettings, writeSettings } from "./settings.js";
 import { db } from "./db.js";
-import { readRecords, readRecordsPaginated, deduplicateDataset, mergeRecords, exportToCsv, deleteDataset, markNotDuplicate } from "../tools/records.js";
+import { readRecords, readRecordsPaginated, deduplicateDataset, mergeRecords, exportToCsv, deleteDataset, markNotDuplicate, deleteRecordsByIds } from "../tools/records.js";
 import { dbGetSchemaRow, dbGetSchema, dbInsertSchema, dbUpdateSchema, dbDeleteSchema, type SchemaInput } from "./schema-store.js";
 import { seedSchemasFromFiles } from "./seed-schemas.js";
 
@@ -125,12 +125,14 @@ app.post("/jobs/index", async (req, reply) => {
 // --- start update job ---
 app.post("/jobs/update", async (req, reply) => {
   if (!requireApiKey(req, reply)) return;
-  const { input, schema, filter } = req.body as Record<string, string>;
+  const body = req.body as Record<string, string | number>;
+  const { input, schema, filter, recordId } = body as { input: string; schema: string; filter?: string; recordId?: number };
   if (!input || !schema) {
     return reply.code(400).send({ error: "input, schema required" });
   }
   const params: Record<string, string> = { input, schema };
   if (filter) params.filter = filter;
+  if (recordId != null) params.recordId = String(recordId);
   const job = createJob("update", params);
   runUpdateJob(job); // fire and forget
   return { id: job.id };
@@ -270,6 +272,16 @@ app.post("/outputs/:dataset/merge-rows", async (req, reply) => {
   const kept = mergeRecords(keepId, removeIds, db);
   if (!kept) return reply.code(404).send({ error: "record not found" });
   return { ok: true, kept };
+});
+
+// --- delete individual records by id ---
+app.delete("/outputs/:dataset/records", async (req, reply) => {
+  const { dataset } = req.params as { dataset: string };
+  if (dataset.includes("..")) return reply.code(400).send({ error: "invalid" });
+  const { ids } = req.body as { ids: number[] };
+  if (!Array.isArray(ids) || ids.length === 0) return reply.code(400).send({ error: "ids required" });
+  deleteRecordsByIds(ids, db);
+  return { ok: true, deleted: ids.length };
 });
 
 // --- records as JSON (paginated, filterable) ---

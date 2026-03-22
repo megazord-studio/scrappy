@@ -29,9 +29,9 @@ export async function runUpdate(
   schemaDef: SchemaDefinition,
   llmClient: LLMClient,
   crawl4aiBase: string,
-  opts: { signal?: AbortSignal; filter?: string; emit?: EmitFn; db?: Database.Database; serpApiKey?: string } = {}
+  opts: { signal?: AbortSignal; filter?: string; recordIds?: number[]; emit?: EmitFn; db?: Database.Database; serpApiKey?: string } = {}
 ): Promise<void> {
-  const { signal, filter, emit, serpApiKey } = opts;
+  const { signal, filter, recordIds, emit, serpApiKey } = opts;
   const log = (type: string, payload: Record<string, unknown>) => {
     emit?.(type, payload);
     const msg = payload.message ?? `[update] ${JSON.stringify(payload)}`;
@@ -39,8 +39,13 @@ export async function runUpdate(
   };
 
   const db: Database.Database = opts.db ?? (await import("../server/db.js")).db;
-  const rows = readRecords(dataset, db);
+  let rows = readRecords(dataset, db);
   const urlField = schemaDef.urlField;
+
+  if (recordIds?.length) {
+    const idSet = new Set(recordIds);
+    rows = rows.filter(r => idSet.has(Number(r["_id"])));
+  }
 
   let officialRows: CsvRow[] = [];
   let comparisonRows: CsvRow[] = [];

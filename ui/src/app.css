@@ -169,7 +169,6 @@ button:disabled { background: #e8e6e0; color: #9b9892; cursor: not-allowed; }
 .stats-bar {
   background: #fff;
   border: 1px solid #e8e6e0;
-  border-left: 2px solid #22d3ee;
   border-radius: 4px;
   padding: 0.65rem 1rem;
 }
@@ -198,7 +197,6 @@ button:disabled { background: #e8e6e0; color: #9b9892; cursor: not-allowed; }
 .dash-panel {
   background: #fff;
   border: 1px solid #e8e6e0;
-  border-left: 2px solid var(--panel-color, #22d3ee);
   border-radius: 4px;
   display: flex; flex-direction: column;
   min-height: 180px; max-height: 280px;

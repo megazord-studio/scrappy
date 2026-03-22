@@ -1,8 +1,16 @@
 <script lang="ts">
-  import { getRecords, mergeRows, markNotDuplicate } from '../lib/api';
+  import { getRecords, mergeRows, markNotDuplicate, deleteRecords, startUpdateJob } from '../lib/api';
   import { buildDupGroups, groupMaxScore, dupScaleHtml } from '../lib/dedup';
 
-  const { file, refreshTick }: { file: string | null; refreshTick: number } = $props();
+  const {
+    file,
+    refreshTick,
+    schemaId = null,
+  }: {
+    file: string | null;
+    refreshTick: number;
+    schemaId?: string | null;
+  } = $props();
 
   interface DisplayRow {
     origIdx: number;
@@ -137,6 +145,32 @@
     }
   }
 
+  async function handleDeleteRecord(id: number) {
+    if (!file) return;
+    if (!confirm('Delete this record?')) return;
+    try {
+      await deleteRecords(file, [id]);
+      await loadRecords();
+    } catch (e) {
+      alert('Delete failed: ' + (e as Error).message);
+    }
+  }
+
+  let updateFeedback = $state<{ origIdx: number; msg: string } | null>(null);
+
+  async function handleUpdateRecord(row: Record<string, string>, origIdx: number) {
+    if (!file || !schemaId) return;
+    const recordId = Number(row['_id']);
+    if (!Number.isFinite(recordId)) return;
+    try {
+      await startUpdateJob({ input: file, schema: schemaId, recordId });
+      updateFeedback = { origIdx, msg: 'Update job started — check Monitor' };
+      setTimeout(() => { updateFeedback = null; }, 4000);
+    } catch (e) {
+      alert('Update failed: ' + (e as Error).message);
+    }
+  }
+
   async function handleMerge(keepId: number, removeIds: number[]) {
     if (!file) return;
     try {
@@ -154,6 +188,24 @@
 
   // Set of "id1,id2,..." keys for groups the user dismissed (optimistic)
   let dismissedGroups = $state(new Set<string>());
+  let openMenuIdx = $state<number | null>(null);
+  let menuX = $state(0);
+  let menuY = $state(0);
+
+  function toggleMenu(idx: number, e: MouseEvent) {
+    e.stopPropagation();
+    if (openMenuIdx === idx) { openMenuIdx = null; return; }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    menuX = rect.right;
+    menuY = rect.bottom + 4;
+    openMenuIdx = idx;
+  }
+
+  $effect(() => {
+    function closeMenu() { openMenuIdx = null; }
+    window.addEventListener('click', closeMenu);
+    return () => window.removeEventListener('click', closeMenu);
+  });
 
   async function handleNotDuplicate(ids: number[]) {
     if (!file) return;
@@ -198,6 +250,19 @@
       <span class="records-meta-dup">{dupGroupCount} dup{dupGroupCount > 1 ? 's' : ''} · {dupTotalRows} rows</span>
     {/if}
   </div>
+  {#if openMenuIdx !== null}
+    {@const openRow = displayRows.find(dr => dr.origIdx === openMenuIdx)}
+    {#if openRow}
+      <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
+      <div class="row-dropdown" style="top:{menuY}px;left:{menuX}px" onclick={(e) => e.stopPropagation()}>
+        {#if schemaId}
+          <button class="row-menu-item" onclick={() => { handleUpdateRecord(openRow.row, openRow.origIdx); openMenuIdx = null; }}>↻ Re-scrape</button>
+        {/if}
+        <button class="row-menu-item row-menu-item--del" onclick={() => { handleDeleteRecord(Number(openRow.row['_id'])); openMenuIdx = null; }}>✕ Delete</button>
+      </div>
+    {/if}
+  {/if}
+
   <div class="records-scroll records-wrap">
     <table class="records-table">
       <thead>
@@ -205,6 +270,7 @@
           {#each headers as h}
             <th class={cellClass(h)}>{h.startsWith('_') ? h.slice(1) : h}</th>
           {/each}
+          <th class="col-actions">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -234,6 +300,11 @@
               </td>
             </tr>
           {/if}
+          {#if updateFeedback?.origIdx === dr.origIdx}
+            <tr class="update-feedback-row">
+              <td colspan={headers.length + 1}>{updateFeedback.msg}</td>
+            </tr>
+          {/if}
           <tr class="data-row" style={dr.borderColor ? `--group-color:${dr.borderColor}` : ''} class:in-group={!!dr.borderColor}>
             {#each headers as h}
               {#if h === '_dataSource'}
@@ -246,6 +317,11 @@
                 <td class={cellClass(h)} title={dr.row[h] ?? ''}>{dr.row[h] ?? ''}</td>
               {/if}
             {/each}
+            <td class="col-actions">
+              <button class="row-burger" onclick={(e) => toggleMenu(dr.origIdx, e)} aria-label="Row actions">
+                <span></span><span></span><span></span>
+              </button>
+            </td>
           </tr>
         {/each}
       </tbody>
@@ -343,6 +419,70 @@
   .data-row.in-group td:first-child {
     box-shadow: inset 2px 0 0 var(--group-color);
   }
+
+  /* Update feedback row */
+  .update-feedback-row td {
+    background: #f0fdf4 !important;
+    color: #15803d;
+    font-size: 0.72rem;
+    font-family: "IBM Plex Mono", monospace;
+    padding: 0.3rem 0.75rem !important;
+    border-bottom: 1px solid #bbf7d0 !important;
+  }
+
+  /* Row burger menu */
+  .col-actions {
+    width: 36px;
+    white-space: nowrap;
+    padding: 0 0.35rem !important;
+    text-align: center;
+  }
+  .row-burger {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 0.3rem 0.4rem;
+    border-radius: 4px;
+    border: 1px solid #e8e6e0;
+    background: #fff;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .row-burger:hover { background: #f5f3ee; border-color: #ccc; }
+  .row-burger span {
+    display: block;
+    width: 12px;
+    height: 1.5px;
+    background: #6b6860;
+    border-radius: 1px;
+  }
+  .row-dropdown {
+    position: fixed;
+    transform: translateX(-100%);
+    background: #fff;
+    border: 1px solid #dddbd5;
+    border-radius: 7px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.10);
+    z-index: 100;
+    min-width: 130px;
+    overflow: hidden;
+  }
+  .row-menu-item {
+    all: unset;
+    cursor: pointer;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.5rem 0.85rem;
+    font-size: 0.8rem;
+    font-family: "IBM Plex Mono", monospace;
+    color: #0e0d0b;
+    transition: background 0.1s;
+  }
+  .row-menu-item:hover { background: #f5f3ee; }
+  .row-menu-item--del { color: #dc2626; }
+  .row-menu-item--del:hover { background: #fef2f2; }
 
   /* Source badge */
   .source-badge {

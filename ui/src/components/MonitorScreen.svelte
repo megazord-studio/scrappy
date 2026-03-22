@@ -44,20 +44,22 @@
   {:else}
     <div class="job-chips">
       {#each recentJobs as j (j.id)}
-        <button
-          class="job-chip"
-          class:selected={j.id === jobsStore.selectedJobId}
-          class:running={j.status === 'running'}
-          onclick={() => dashStore.openJob(j.id)}
-          title={jobLabel(j)}
-        >
-          <span class="job-chip-dot" class:running={j.status === 'running'} class:done={j.status === 'done'} class:failed={j.status === 'failed'}></span>
-          <span class="job-chip-label">{jobLabel(j)}</span>
-          <span class="job-chip-age">{timeAgo(j.startedAt)}</span>
+        <div class="job-chip-wrap">
+          <button
+            class="job-chip"
+            class:selected={j.id === jobsStore.selectedJobId}
+            class:running={j.status === 'running'}
+            onclick={() => dashStore.openJob(j.id)}
+            title={jobLabel(j)}
+          >
+            <span class="job-chip-dot" class:running={j.status === 'running'} class:done={j.status === 'done'} class:failed={j.status === 'failed'}></span>
+            <span class="job-chip-label">{jobLabel(j)}</span>
+            <span class="job-chip-age">{timeAgo(j.startedAt)}</span>
+          </button>
           {#if j.status === 'running'}
             <button class="job-chip-cancel" onclick={(e) => handleCancel(j.id, e)} title="Cancel">×</button>
           {/if}
-        </button>
+        </div>
       {/each}
       {#if jobsStore.jobs.length > 8}
         <span class="job-chip-more">+{jobsStore.jobs.length - 8}</span>
@@ -130,7 +132,7 @@
       <div class="empty">No rows updated yet</div>
     {:else}
       {#each s.updateRows as r}
-        <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+        <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
         <div
           class="p-row"
           class:update-row-link={!!r.dataset}
@@ -226,7 +228,6 @@
     margin-bottom: 0.75rem;
     background: #f0fdf4;
     border: 1px solid #bbf7d0;
-    border-left: 3px solid #16a34a;
     border-radius: 4px;
     font-family: "IBM Plex Mono", "Fira Code", monospace;
     font-size: 0.8rem;
@@ -237,7 +238,6 @@
   .action-ticker.idle {
     color: #9b9892;
     border-color: #e8e6e0;
-    border-left-color: #d0cec8;
     background: #fafaf9;
   }
   .ticker-dot {
@@ -313,6 +313,12 @@
     align-items: center;
   }
   .job-chips::-webkit-scrollbar { display: none; }
+
+  .job-chip-wrap {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+  }
 
   .job-chip {
     all: unset;

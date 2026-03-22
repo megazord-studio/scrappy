@@ -17,28 +17,31 @@
     onSelectsReload: () => void;
   } = $props();
 
-  let datasets = $state<string[]>(initialOutputs);
-  let selectedDataset = $state<string | null>(initialOutputs[0] ?? null);
+  let datasets = $state<string[]>([]);
+  let selectedDataset = $state<string | null>(null);
   let recordsTick = $state(0);
 
-  $effect(() => { datasets = initialOutputs; });
+  $effect(() => {
+    datasets = initialOutputs;
+    if (selectedDataset === null && initialOutputs.length > 0) {
+      selectedDataset = initialOutputs[0];
+    }
+  });
 
-  let activePanel = $state<'index' | 'update' | null>(null);
-  let indexTopic = $state('');
-  let indexSchema = $state('');
-  let indexOutput = $state('');
-  let indexIterations = $state(40);
+  let activePanel = $state<'update' | 'create' | null>(null);
   let updateSchema = $state('');
   let updateFilter = $state('');
+  let createTopic = $state('');
+  let createSchema = $state('');
+  let createOutput = $state('');
+  let createIterations = $state(40);
   let submitting = $state(false);
   let chatHistory = $state<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   let chatInput = $state('');
   let chatLoading = $state(false);
 
   $effect(() => {
-    if (activePanel === 'update' && !updateSchema) {
-      updateSchema = schemas[0]?.id ?? '';
-    }
+    if (!updateSchema) updateSchema = schemas[0]?.id ?? '';
   });
 
   const activeJob = $derived(
@@ -57,7 +60,6 @@
   function handleSelectDataset(name: string) {
     selectedDataset = name;
     recordsTick++;
-    if (activePanel === 'index') activePanel = null;
   }
 
   async function handleDelete(name: string) {
@@ -78,12 +80,14 @@
     onSelectsReload();
   }
 
-  async function startIndex() {
-    if (!indexTopic || !indexSchema || !indexOutput) return;
+  async function startCreate() {
+    if (!createTopic || !createSchema || !createOutput) return;
     submitting = true;
-    await startIndexJob({ topic: indexTopic, schema: indexSchema, output: indexOutput, maxIterations: indexIterations });
+    await startIndexJob({ topic: createTopic, schema: createSchema, output: createOutput, maxIterations: createIterations });
     submitting = false;
     activePanel = null;
+    await refreshDatasets();
+    selectedDataset = createOutput;
   }
 
   async function startUpdate() {
@@ -112,6 +116,13 @@
     <!-- Sidebar -->
     <aside class="ds-sidebar">
 
+      <!-- New Dataset button -->
+      <button
+        class="ds-new-btn"
+        class:ds-new-btn--active={activePanel === 'create'}
+        onclick={() => { selectedDataset = null; activePanel = activePanel === 'create' ? null : 'create'; }}
+      >+ New Dataset</button>
+
       <!-- Datasets section -->
       <div class="ds-sidebar-sec-header">
         <span>Datasets</span>
@@ -121,7 +132,7 @@
         <div class="ds-sidebar-empty">No datasets yet</div>
       {:else}
         {#each datasets as name (name)}
-          <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+          <!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
           <div
             class="ds-card"
             class:ds-card--active={selectedDataset === name}
@@ -166,8 +177,38 @@
 
     <!-- Main -->
     <div class="ds-main">
-      {#if !selectedDataset}
-        <div class="ds-empty">Select a dataset from the sidebar</div>
+      {#if activePanel === 'create'}
+        <!-- New Dataset form -->
+        <div class="ds-action-panel ds-panel--create">
+          <div class="ds-panel-title">+ New Dataset</div>
+          <div class="ds-panel-fields">
+            <div class="ds-field ds-field--wide">
+              <label class="ds-label" for="create-topic">Topic</label>
+              <input id="create-topic" class="ds-input" bind:value={createTopic} placeholder="e.g. Swiss savings accounts…" />
+            </div>
+            <div class="ds-field">
+              <label class="ds-label" for="create-schema">Schema</label>
+              <select id="create-schema" class="ds-select" bind:value={createSchema}>
+                <option value="">Select schema…</option>
+                {#each schemas as s}<option value={s.id}>{s.display_name}</option>{/each}
+              </select>
+            </div>
+            <div class="ds-field">
+              <label class="ds-label" for="create-output">Dataset name</label>
+              <input id="create-output" class="ds-input" bind:value={createOutput} placeholder="my-dataset" list="ds-outputs-list" />
+              <datalist id="ds-outputs-list">{#each datasets as o}<option value={o}></option>{/each}</datalist>
+            </div>
+            <div class="ds-field">
+              <label class="ds-label" for="create-iterations">Max iterations</label>
+              <input id="create-iterations" class="ds-input" type="number" bind:value={createIterations} min="1" max="200" />
+            </div>
+          </div>
+          <button class="ds-submit ds-submit--teal" onclick={startCreate} disabled={submitting || !createTopic || !createSchema || !createOutput}>
+            {submitting ? 'Starting…' : '→ Create dataset'}
+          </button>
+        </div>
+      {:else if !selectedDataset}
+        <div class="ds-empty">Select a dataset or create a new one</div>
       {:else}
         <!-- Top bar -->
         <div class="ds-topbar">
@@ -176,7 +217,6 @@
           </div>
           <div class="ds-topbar-actions">
             <button class="ds-btn ds-btn--update" class:ds-btn--active={activePanel === 'update'} onclick={() => { activePanel = activePanel === 'update' ? null : 'update'; }}>↻ Update</button>
-            <button class="ds-btn ds-btn--index" class:ds-btn--active={activePanel === 'index'} onclick={() => { activePanel = activePanel === 'index' ? null : 'index'; }}>+ New Index</button>
             <a class="ds-btn" href="/outputs/{selectedDataset}" download>↓ Export CSV</a>
           </div>
         </div>
@@ -185,7 +225,7 @@
         {#if activeJob}
         <div class="ds-job-banner">
           <span class="ds-job-dot running"></span>
-          {activeJob.type === 'index' ? 'Indexing' : 'Updating'} dataset…
+          {activeJob.type === 'index' ? 'Creating' : 'Updating'} dataset…
           <a href="#monitor" class="ds-job-link">Watch in Monitor →</a>
         </div>
         {/if}
@@ -196,14 +236,14 @@
           <div class="ds-panel-title">↻ Update · {selectedDataset}</div>
           <div class="ds-panel-fields">
             <div class="ds-field">
-              <label class="ds-label">Schema</label>
-              <select class="ds-select" bind:value={updateSchema}>
+              <label class="ds-label" for="update-schema">Schema</label>
+              <select id="update-schema" class="ds-select" bind:value={updateSchema}>
                 {#each schemas as s}<option value={s.id}>{s.display_name}</option>{/each}
               </select>
             </div>
             <div class="ds-field">
-              <label class="ds-label">Filter (optional)</label>
-              <input class="ds-input" bind:value={updateFilter} placeholder="e.g. provider name…" />
+              <label class="ds-label" for="update-filter">Filter (optional)</label>
+              <input id="update-filter" class="ds-input" bind:value={updateFilter} placeholder="e.g. provider name…" />
             </div>
           </div>
           <button class="ds-submit" onclick={startUpdate} disabled={submitting || !updateSchema}>
@@ -212,77 +252,52 @@
         </div>
         {/if}
 
-        <!-- Index panel -->
-        {#if activePanel === 'index'}
-        <div class="ds-action-panel ds-panel--index">
-          <div class="ds-panel-title">+ New Index Job</div>
-          <div class="ds-panel-fields">
-            <div class="ds-field ds-field--wide">
-              <label class="ds-label">Topic</label>
-              <input class="ds-input" bind:value={indexTopic} placeholder="e.g. Swiss savings accounts…" />
-            </div>
-            <div class="ds-field">
-              <label class="ds-label">Schema</label>
-              <select class="ds-select" bind:value={indexSchema}>
-                <option value="">Select schema…</option>
-                {#each schemas as s}<option value={s.id}>{s.display_name}</option>{/each}
-              </select>
-            </div>
-            <div class="ds-field">
-              <label class="ds-label">Output dataset name</label>
-              <input class="ds-input" bind:value={indexOutput} placeholder="my-dataset" list="ds-outputs-list" />
-              <datalist id="ds-outputs-list">{#each datasets as o}<option value={o}></option>{/each}</datalist>
-            </div>
-            <div class="ds-field">
-              <label class="ds-label">Max iterations</label>
-              <input class="ds-input" type="number" bind:value={indexIterations} min="1" max="200" />
+        <!-- Records + Chat side by side -->
+        <div class="ds-content-row">
+          <div class="ds-records-col">
+            <div class="ds-section-label">Records</div>
+            <div class="records-card">
+              <RecordsTab file={selectedDataset} refreshTick={recordsTick} schemaId={updateSchema || null} />
             </div>
           </div>
-          <button class="ds-submit ds-submit--teal" onclick={startIndex} disabled={submitting || !indexTopic || !indexSchema || !indexOutput}>
-            {submitting ? 'Starting…' : '→ Start indexing'}
-          </button>
-        </div>
-        {/if}
 
-        <!-- Records -->
-        <div class="ds-section-label">Records</div>
-        <div class="records-card">
-          <RecordsTab file={selectedDataset} refreshTick={recordsTick} />
-        </div>
-
-        <!-- Chat panel -->
-        <div class="ds-chat">
-          <div class="ds-chat-header">
-            <span class="ds-chat-icon">✦</span>
-            <span class="ds-chat-title">Ask about this dataset</span>
-          </div>
-          <div class="ds-chat-msgs" class:ds-chat-msgs--empty={chatHistory.length === 0 && !chatLoading}>
-            {#each chatHistory as msg}
-              {#if msg.role === 'user'}
-                <div class="ds-chat-bubble-user">{msg.content}</div>
-              {:else}
+          <!-- Chat panel -->
+          <div class="ds-chat-col">
+          <div class="ds-section-label">Assistant</div>
+          <div class="ds-chat">
+            <div class="ds-chat-header">
+              <span class="ds-chat-icon">✦</span>
+              <span class="ds-chat-title">Ask about this dataset</span>
+            </div>
+            <div class="ds-chat-msgs" class:ds-chat-msgs--empty={chatHistory.length === 0 && !chatLoading}>
+              {#each chatHistory as msg}
+                {#if msg.role === 'user'}
+                  <div class="ds-chat-bubble-user">{msg.content}</div>
+                {:else}
+                  <div class="ds-chat-row-ai">
+                    <span class="ds-chat-avatar">✦</span>
+                    <div class="ds-chat-bubble-ai">{msg.content}</div>
+                  </div>
+                {/if}
+              {/each}
+              {#if chatLoading}
                 <div class="ds-chat-row-ai">
                   <span class="ds-chat-avatar">✦</span>
-                  <div class="ds-chat-bubble-ai">{msg.content}</div>
+                  <span class="ds-chat-dots"><span></span><span></span><span></span></span>
                 </div>
               {/if}
-            {/each}
-            {#if chatLoading}
-              <div class="ds-chat-row-ai">
-                <span class="ds-chat-avatar">✦</span>
-                <span class="ds-chat-dots"><span></span><span></span><span></span></span>
-              </div>
-            {/if}
+            </div>
+            <div class="ds-chat-input-row">
+              <input
+                class="ds-chat-input"
+                bind:value={chatInput}
+                placeholder="Ask about trends, anomalies, or what to track next…"
+                onkeydown={(e) => { if (e.key === 'Enter') sendChatMsg(); }}
+                disabled={chatLoading}
+              />
+              <button class="ds-chat-send" aria-label="Send message" onclick={sendChatMsg} disabled={chatLoading || !chatInput.trim()}>↑</button>
+            </div>
           </div>
-          <div class="ds-chat-input-row">
-            <input
-              class="ds-chat-input"
-              bind:value={chatInput}
-              placeholder="Ask about trends, anomalies, or what to track next…"
-              onkeydown={(e) => { if (e.key === 'Enter') sendChatMsg(); }}
-              disabled={chatLoading}
-            />
-            <button class="ds-chat-send" aria-label="Send message" onclick={sendChatMsg} disabled={chatLoading || !chatInput.trim()}>↑</button>
           </div>
         </div>
 
@@ -304,6 +319,30 @@
     min-height: calc(100vh - 120px); /* account for header + body padding */
     align-items: flex-start;
   }
+
+  /* New Dataset button */
+  .ds-new-btn {
+    all: unset;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 0.55rem 0.9rem;
+    border-radius: 8px;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'DM Sans', sans-serif;
+    border: 1.5px solid #67e8f9;
+    background: #ecfeff;
+    color: #0e7490;
+    transition: border-color 0.12s, background 0.12s;
+    margin-bottom: 0.25rem;
+  }
+  .ds-new-btn:focus-visible { outline: 2px solid #22d3ee; outline-offset: 2px; }
+  .ds-new-btn:hover { border-color: #22d3ee; background: #cffafe; }
+  .ds-new-btn--active { border-color: #22d3ee; background: #cffafe; box-shadow: inset 0 0 0 1.5px #22d3ee; }
 
   /* ── Sidebar ── */
   .ds-sidebar {
@@ -370,7 +409,7 @@
   }
   .ds-card--active {
     border-color: #22d3ee;
-    box-shadow: inset 3px 0 0 #22d3ee, 0 1px 6px rgba(34,211,238,0.12);
+    box-shadow: 0 1px 6px rgba(34,211,238,0.12);
     background: #f0fdff;
   }
 
@@ -514,11 +553,10 @@
   }
 
   .ds-topbar-name {
-    font-family: 'Syne', sans-serif;
-    font-weight: 800;
-    font-size: 1rem;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 600;
+    font-size: 0.95rem;
     color: #0e0d0b;
-    letter-spacing: -0.02em;
   }
 
   .ds-topbar-actions {
@@ -550,8 +588,6 @@
 
   .ds-btn--update { border-color: #fcd34d; color: #92400e; background: #fffbeb; }
   .ds-btn--update:hover { border-color: #f59e0b; background: #fef3c7; }
-  .ds-btn--index { border-color: #67e8f9; color: #0e7490; background: #ecfeff; }
-  .ds-btn--index:hover { border-color: #22d3ee; background: #cffafe; }
   .ds-btn--active { box-shadow: inset 0 0 0 1.5px currentColor; }
 
   /* Job banner */
@@ -580,8 +616,8 @@
     background: #fff; border: 1px solid #dddbd5; border-radius: 12px;
     padding: 1.25rem 1.5rem; margin-bottom: 0.75rem;
   }
-  .ds-panel--update { border-left: 3px solid #f59e0b; }
-  .ds-panel--index  { border-left: 3px solid #22d3ee; }
+  .ds-panel--update { border-top: 3px solid #f59e0b; }
+  .ds-panel--create { border-top: 3px solid #22d3ee; }
 
   .ds-panel-title {
     font-family: 'Syne', sans-serif; font-weight: 700;
@@ -624,6 +660,27 @@
   .ds-submit:disabled { opacity: 0.4; cursor: not-allowed; }
   .ds-submit--teal { background: #22d3ee; color: #0e0d0b; }
 
+  /* Records + Chat two-column layout */
+  .ds-content-row {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .ds-records-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .ds-chat-col {
+    width: 300px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
   /* Section label above records */
   .ds-section-label {
     font-family: 'Syne', sans-serif;
@@ -647,7 +704,10 @@
   /* Chat */
   .ds-chat {
     background: #fff; border: 1px solid #dddbd5; border-radius: 14px;
-    margin-top: 0.75rem; overflow: hidden;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    height: 50vh;
   }
   .ds-chat-header {
     display: flex; align-items: center; gap: 0.5rem;
@@ -663,10 +723,12 @@
   .ds-chat-msgs {
     padding: 0.85rem 1rem 0.5rem;
     display: flex; flex-direction: column; gap: 0.75rem;
-    max-height: 220px; overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
     scrollbar-width: thin; scrollbar-color: #e2e0db transparent;
   }
-  .ds-chat-msgs--empty { padding: 0; max-height: 0; overflow: hidden; }
+  .ds-chat-msgs--empty { padding: 0; overflow: hidden; }
   .ds-chat-bubble-user {
     align-self: flex-end; max-width: 80%;
     background: #f0f9ff; border: 1px solid #bae6fd;

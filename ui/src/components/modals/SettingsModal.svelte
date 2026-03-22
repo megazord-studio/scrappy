@@ -66,6 +66,7 @@
   }
 </script>
 
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_static_element_interactions -->
 <div class="modal-backdrop" class:open onclick={handleBackdropClick}>
   <div class="modal">
     <div class="modal-title">Settings</div>
@@ -74,6 +75,7 @@
     <label for="crawl4ai-base">Crawl4AI endpoint</label>
     <input id="crawl4ai-base" type="text" bind:value={crawl4aiBase} placeholder="https://crawl.naszilla.ch" style="margin-bottom:1rem" />
 
+    <!-- svelte-ignore a11y_label_has_associated_control -->
     <label>LLM Provider</label>
     <div style="display:flex;gap:1.25rem;margin-bottom:0.75rem;flex-wrap:wrap">
       {#each (['anthropic', 'openai', 'zordmind'] as const) as p}
@@ -119,6 +121,7 @@
 
     <div class="section-divider">API</div>
 
+    <!-- svelte-ignore a11y_label_has_associated_control -->
     <label>API Key <span class="hint">(required to trigger jobs remotely)</span></label>
     <div class="api-key-row">
       <input type="text" value={apiKey} readonly style="flex:1;font-family:monospace;font-size:0.75rem" />
