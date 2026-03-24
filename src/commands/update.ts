@@ -29,9 +29,9 @@ export async function runUpdate(
   schemaDef: SchemaDefinition,
   llmClient: LLMClient,
   crawl4aiBase: string,
-  opts: { signal?: AbortSignal; filter?: string; recordIds?: number[]; emit?: EmitFn; db?: Database.Database; serpApiKey?: string } = {}
+  opts: { signal?: AbortSignal; filter?: string; recordIds?: number[]; emit?: EmitFn; db?: Database.Database; serpApiKey?: string; deepSearch?: boolean } = {}
 ): Promise<void> {
-  const { signal, filter, recordIds, emit, serpApiKey } = opts;
+  const { signal, filter, recordIds, emit, serpApiKey, deepSearch } = opts;
   const log = (type: string, payload: Record<string, unknown>) => {
     emit?.(type, payload);
     const msg = payload.message ?? `[update] ${JSON.stringify(payload)}`;
@@ -97,6 +97,16 @@ export async function runUpdate(
     return s.replace(/([A-Z])/g, " $1").toLowerCase().split(/[\s_-]+/).filter(Boolean);
   }
 
+  // Normalize a path or anchor text for keyword matching.
+  // German URLs expand umlauts (ä→ae, ö→oe, ü→ue) so "zinssaetze" in a URL won't
+  // match the schema keyword "zinssatz" without this step. We also collapse the
+  // digraphs so both the URL form and the plain-text form reduce to the same string.
+  function normalizeForMatch(s: string): string {
+    return s.toLowerCase()
+      .replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/ß/g, "ss")
+      .replace(/ae/g, "a").replace(/oe/g, "o").replace(/ue/g, "u");
+  }
+
   // Build a keyword regex from the schema: rateFields, field names, dedupeKey, field descriptions
   function buildSchemaKeywordRe(): RegExp | null {
     const STOP = new Set(["name", "value", "field", "data", "info", "page", "item", "list",
@@ -106,21 +116,38 @@ export async function runUpdate(
 
     // rateFields are the strongest hint — they're literally what we're looking for
     for (const f of schemaDef.rateFields) {
-      splitIdentifier(f).forEach(w => { if (w.length >= 3 && !STOP.has(w)) words.add(w); });
+      splitIdentifier(f).forEach(w => { if (w.length >= 3 && !STOP.has(w)) words.add(normalizeForMatch(w)); });
     }
     // field names and dedupe keys
     for (const f of [...Object.keys(schemaDef.fieldDescriptions), ...schemaDef.dedupeKey]) {
-      splitIdentifier(f).forEach(w => { if (w.length >= 4 && !STOP.has(w)) words.add(w); });
+      splitIdentifier(f).forEach(w => { if (w.length >= 4 && !STOP.has(w)) words.add(normalizeForMatch(w)); });
     }
     // meaningful words from field descriptions
     for (const desc of Object.values(schemaDef.fieldDescriptions)) {
-      desc.split(/\W+/).forEach(w => { if (w.length >= 5 && !STOP.has(w.toLowerCase())) words.add(w.toLowerCase()); });
+      desc.split(/\W+/).forEach(w => { if (w.length >= 5 && !STOP.has(w.toLowerCase())) words.add(normalizeForMatch(w)); });
     }
 
     return words.size > 0 ? new RegExp([...words].join("|"), "i") : null;
   }
 
   const schemaKeywordRe = buildSchemaKeywordRe();
+
+  // Regex built from rateFields only — these are the strongest path signal because
+  // they name the exact data we're looking for (e.g. "zinssatz" → zinssaetze.html,
+  // "preis" → preise.html). Scored separately so they outrank generic field keywords
+  // like "konto" or "bank" that appear in every product URL on a bank's site.
+  const fieldValueRe = (() => {
+    const words = new Set<string>();
+    for (const f of schemaDef.rateFields) {
+      splitIdentifier(f).forEach(w => { if (w.length >= 3) words.add(normalizeForMatch(w)); });
+    }
+    return words.size > 0 ? new RegExp([...words].join("|"), "i") : null;
+  })();
+
+  // Generic detail/pricing/specs page URL patterns — covers product detail pages across
+  // all domains and languages (e.g. "konditionen", "tarife", "specs", "pricing").
+  // Scored between fieldValueRe (+4) and schemaKeywordRe (+2).
+  const detailPageRe = /detail|spec|pricing|price|feature|kondition|tarif|preise?|taux|prix|prezzi|rates?|fees?|kosten|gebuhr|offert|produkt|product|plan/i;
 
   // Score a link by how likely it leads to relevant data.
   // URL path keywords are a strong signal; anchor text alone is weak (navigation menus
@@ -129,12 +156,18 @@ export async function runUpdate(
     let score = 0;
     let hasPathSignal = false;
     try {
-      const path = new URL(link.url).pathname.toLowerCase();
+      const path = normalizeForMatch(new URL(link.url).pathname);
       if (path.endsWith(".pdf")) { score += 3; hasPathSignal = true; }
-      if (schemaKeywordRe?.test(path)) { score += 2; hasPathSignal = true; }
+      // fieldValue keywords in the path are the strongest signal (+4)
+      if (fieldValueRe?.test(path)) { score += 4; hasPathSignal = true; }
+      // generic detail/pricing page patterns are next (+3)
+      else if (detailPageRe.test(path)) { score += 3; hasPathSignal = true; }
+      // general schema keywords are weakest (+2)
+      else if (schemaKeywordRe?.test(path)) { score += 2; hasPathSignal = true; }
     } catch { /* skip */ }
-    const text = link.text.toLowerCase();
-    if (schemaKeywordRe?.test(text)) score += 2;
+    const text = normalizeForMatch(link.text);
+    if (fieldValueRe?.test(text)) score += 3;
+    else if (schemaKeywordRe?.test(text)) score += 2;
     if (/pdf|document|download|dokument/i.test(text)) score += 1;
     // Anchor-text-only links are weaker (nav menus often have relevant terms
     // but link to generic landing pages). Still allow them at a lower effective score.
@@ -232,13 +265,30 @@ ${markdown}`,
     return hasData ? extracted : null;
   }
 
-  async function extractAndUpdate(row: CsvRow, url: string, providerName: string): Promise<boolean> {
+  async function extractAndUpdate(row: CsvRow, url: string, providerName: string, isRootFallback = false): Promise<boolean> {
     const rateFieldDescriptions = schemaDef.rateFields
       .map((f) => `  - ${f}: ${schemaDef.fieldDescriptions[f] ?? f}`)
       .join("\n");
     const bm25Query = schemaDef.rateFields
       .map((f) => schemaDef.fieldDescriptions[f] ?? f)
       .join(" ");
+
+    // Track URLs tried in this run to avoid redundant fetches across stages
+    const triedUrls = new Set<string>();
+
+    // eTLD+1 of the source URL — used to filter off-domain candidates (e.g. onetrust.com)
+    const sourceDomain = (() => { try { const h = new URL(url).hostname.split("."); return h.slice(-2).join("."); } catch { return null; } })();
+
+    // Deep search: the normal update already tried the stored URL with 3 candidates.
+    // Skip straight to root domain so we get 10 fresh candidates from the homepage.
+    if (deepSearch && !isRootFallback) {
+      const rootUrl = (() => { try { return new URL(url).origin; } catch { return null; } })();
+      const urlNoTrail = (() => { try { const u = new URL(url); u.hash = ""; u.search = ""; return u.href.replace(/\/$/, ""); } catch { return url; } })();
+      if (rootUrl && rootUrl !== urlNoTrail) {
+        log("log", { message: `${providerName}: deep search — starting from root domain ${rootUrl}` });
+        return extractAndUpdate(row, rootUrl, providerName, true);
+      }
+    }
 
     // PDF fast path: skip Crawl4AI entirely, fetch + parse directly
     if (url.toLowerCase().endsWith(".pdf")) {
@@ -262,7 +312,7 @@ ${markdown}`,
           updates += u;
           return true;
         }
-        log("log", { message: `${providerName}: PDF opened but no rate data found` });
+        log("log", { message: `${providerName}: PDF opened but no data found` });
       } catch (e) {
         log("log", { message: `${providerName}: PDF not accessible — falling back to root domain` });
       }
@@ -303,15 +353,30 @@ ${markdown}`,
           if (score <= 0) return false;
           // skip links that are just fragments of the current page (same content, different scroll pos)
           try { const u = new URL(link.url); u.hash = ""; if (u.href === currentBase) return false; } catch {}
+          // skip media/font/image files — they can never contain useful data
+          if (/\.(svg|png|jpg|jpeg|gif|webp|ico|woff2?|ttf|eot|mp4|mp3|zip|xml|json)$/i.test(link.url)) return false;
+          // skip login/portal/auth and editorial/blog pages — never contain product data
+          // split by "/" and check if any segment starts with a known non-content keyword
+          // (handles ebanking-mobilebanking, secureLogin, e-banking, etc.)
+          try {
+            const segments = new URL(link.url).pathname.toLowerCase().split("/");
+            if (segments.some(s => /^(e-?banking|login|signin|sign-in|logout|auth|secure|portal|mobile-?banking|onlinebanking|news|blog|actualite|article|magazine|presse|points-de-vue|aktuell|medien|presse|comunicato|notizie)/.test(s))) return false;
+          } catch {}
+          // skip off-domain links (e.g. onetrust.com on allianz.ch) — third-party sites never have product data
+          try { const h = new URL(link.url).hostname.split("."); if (sourceDomain && h.slice(-2).join(".") !== sourceDomain) return false; } catch {}
+          // skip already-tried URLs
+          if (triedUrls.has(link.url)) return false;
+
           return true;
         })
         .sort((a, b) => b.score - a.score)
-        .slice(0, 3)
+        .slice(0, deepSearch ? 10 : 3)
         .map(({ link }) => link);
 
       for (const link of candidates) {
         const isPdf = link.url.toLowerCase().endsWith(".pdf");
         log("log", { message: `${providerName}: following promising link ${link.url}` });
+        triedUrls.add(link.url);
         try {
           let linkMd: string;
           if (isPdf) {
@@ -330,21 +395,24 @@ ${markdown}`,
             log("scrape_done", { url: link.url, provider: providerName, chars: linkMd.length, method: "bm25" });
             extracted = await llmExtract(linkMd, providerName, rateFieldDescriptions);
 
-            // One level deeper: if this page has no data, scan its links for PDFs.
-            // Also do a full crawl to capture PDF links hidden in web components / custom HTML elements
-            // that BM25 strips out (e.g. <bal-list-item href="...">).
+            // One level deeper: BM25 may miss JS-rendered content (SPAs, web components).
+            // Full crawl via Playwright renders the page — try extraction on that too,
+            // then also scan for PDF links hidden in custom HTML elements.
             if (!extracted) {
               try {
                 const crawlResult = await scrapeUrl(link.url, crawl4aiBase);
                 const seen = new Set(pageLinks.map(l => l.url));
                 pageLinks = [...pageLinks, ...crawlResult.links.filter(l => !seen.has(l.url))];
+                // attempt extraction from the fully JS-rendered markdown
+                extracted = await llmExtract(crawlResult.markdown, providerName, rateFieldDescriptions);
               } catch { /* ignore crawl errors, proceed with BM25 links */ }
               // score and prefer PDFs whose link text suggests rate content (e.g. "Die Zinssätze")
               const deepPdfs = pageLinks
-                .filter(l => l.url.toLowerCase().endsWith(".pdf"))
+                .filter(l => l.url.toLowerCase().endsWith(".pdf") && !triedUrls.has(l.url))
                 .sort((a, b) => rateLinkScore(b) - rateLinkScore(a))
-                .slice(0, 5);
+                .slice(0, deepSearch ? 10 : 5);
               for (const pdf of deepPdfs) {
+                triedUrls.add(pdf.url);
                 log("log", { message: `${providerName}: found PDF on ${link.url} → ${pdf.url}` });
                 try {
                   const pdfText = await fetchPdf(pdf.url, link.url);
@@ -367,8 +435,19 @@ ${markdown}`,
       }
     }
 
+    // Stage 4: if stored URL was a subpage and all attempts failed, fall back to the
+    // root domain and re-run stages 1–3 from there. One level only (isRootFallback).
+    if (!extracted && !isRootFallback) {
+      const rootUrl = (() => { try { return new URL(url).origin; } catch { return null; } })();
+      const urlNoTrail = (() => { try { const u = new URL(url); u.hash = ""; u.search = ""; return u.href.replace(/\/$/, ""); } catch { return url; } })();
+      if (rootUrl && rootUrl !== urlNoTrail) {
+        log("log", { message: `${providerName}: data not found on stored page — trying root domain ${rootUrl}` });
+        return extractAndUpdate(row, rootUrl, providerName, true);
+      }
+    }
+
     if (!extracted) {
-      log("error", { tool: "llm", message: `${providerName}: no rate data found after all attempts` });
+      log("error", { tool: "llm", message: `${providerName}: no data found after all attempts` });
       return false;
     }
 

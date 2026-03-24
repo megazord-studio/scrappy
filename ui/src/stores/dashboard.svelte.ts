@@ -36,8 +36,12 @@ class DashboardStore {
   private activeStream: EventSource | null = null;
   private elapsedTimer: ReturnType<typeof setInterval> | null = null;
   private recordsTimer: ReturnType<typeof setInterval> | null = null;
+  private _isOpening = false;
 
   async openJob(id: string) {
+    if (this._isOpening) return;
+    this._isOpening = true;
+    try {
     jobsStore.select(id);
     await jobsStore.refresh();
 
@@ -62,9 +66,6 @@ class DashboardStore {
 
     if (job.status === 'running') {
       this.elapsedTimer = setInterval(() => {
-        // trigger reactivity by touching jobStartedAt
-        // The $derived elapsed recomputes automatically since it calls Date.now()
-        // We just need a tick; we'll use a workaround via a dummy state
         this._elapsedTick = (this._elapsedTick ?? 0) + 1;
       }, 1000);
 
@@ -79,17 +80,15 @@ class DashboardStore {
       const es = new EventSource(`/jobs/${id}/stream`);
       this.activeStream = es;
 
-      let replayDone = false;
-      const replayCount = events.length;
-      let seen = 0;
+      // Track how many events we've already processed so we can skip
+      // replayed events on reconnect (EventSource auto-reconnects and the
+      // server always replays all stored events from the beginning).
+      let processedCount = events.length;
+      let skipRemaining = events.length;
 
       es.onmessage = (e) => {
+        if (skipRemaining > 0) { skipRemaining--; return; }
         const { type, payload, ts } = JSON.parse(e.data);
-        if (!replayDone) {
-          seen++;
-          if (seen > replayCount) replayDone = true;
-          else return;
-        }
         if (type === '__done__') {
           es.close();
           this.activeStream = null;
@@ -109,9 +108,15 @@ class DashboardStore {
           return;
         }
         this.processEvent(type, payload as Record<string, unknown>, ts);
+        processedCount++;
       };
-      es.onerror = () => es.close();
+      // Close on error rather than letting EventSource auto-reconnect,
+      // which would replay all events and cause duplicates.
+      es.onerror = () => { es.close(); this.activeStream = null; };
     }
+  } finally {
+    this._isOpening = false;
+  }
   }
 
   processEvent(type: string, payload: Record<string, unknown>, ts?: string) {
@@ -127,13 +132,12 @@ class DashboardStore {
         this.currentAction = `iteration ${payload.iteration} / ${payload.maxIterations}`;
         break;
       case 'search':
-        s.searches = [...s.searches, { query: payload.query as string, count: null, ts: time }];
+        s.searches.push({ query: payload.query as string, count: null, ts: time });
         this.currentAction = `searching: ${payload.query}`;
         break;
       case 'search_done':
         if (s.searches.length) {
-          const last = { ...s.searches[s.searches.length - 1], count: payload.count as number };
-          s.searches = [...s.searches.slice(0, -1), last];
+          s.searches[s.searches.length - 1] = { ...s.searches[s.searches.length - 1], count: payload.count as number };
         }
         this.currentAction = `search returned ${payload.count} results`;
         break;
@@ -161,7 +165,7 @@ class DashboardStore {
         newMap.delete(key);
         s.activeScrapes = newMap;
         if (!payload.error) {
-          s.completedScrapes = [{ ...payload, ts: time } as { url: string; chars?: number; links?: number; ts: string }, ...s.completedScrapes];
+          s.completedScrapes.unshift({ ...payload, ts: time } as { url: string; chars?: number; links?: number; ts: string });
           const chars = payload.chars as number ?? 0;
           const method = payload.method as string | undefined;
           const provider = payload.provider as string | undefined;
@@ -182,12 +186,12 @@ class DashboardStore {
         break;
       }
       case 'extract':
-        s.extractions = [...s.extractions, {
+        s.extractions.push({
           url: payload.url as string,
           count: payload.count as number,
           total: payload.total as number,
           ts: time,
-        }];
+        });
         if ((payload.total as number) > s.recordCount) s.recordCount = payload.total as number;
         this.currentAction = `extracted ${payload.count} records from ${payload.url} (total: ${payload.total})`;
         break;
@@ -219,7 +223,7 @@ class DashboardStore {
         break;
       }
       case 'error':
-        s.errors = [...s.errors, { tool: payload.tool as string | undefined, message: payload.message as string, ts: time }];
+        s.errors.push({ tool: payload.tool as string | undefined, message: payload.message as string, ts: time });
         this.currentAction = `error: ${payload.message}`;
         break;
       case 'finish':
@@ -238,7 +242,7 @@ class DashboardStore {
         const provider = payload.provider as string;
         const changed = payload.changed as boolean;
         const newValue = payload.newValue as string;
-        s.updateRows = [{
+        s.updateRows.unshift({
           provider,
           url: payload.url as string | undefined,
           oldValue: payload.oldValue as string,
@@ -246,7 +250,7 @@ class DashboardStore {
           changed,
           ts: time,
           dataset: this.state.job?.params.input as string | undefined,
-        }, ...s.updateRows];
+        });
         s.updateDone = s.updateDone + 1;
         this.currentAction = changed
           ? `✓ ${provider}\nupdated → ${newValue}`
@@ -257,7 +261,7 @@ class DashboardStore {
 
     const text = formatEvent(type, payload);
     if (text) {
-      s.rawLog = [...s.rawLog, { type, text }];
+      s.rawLog.push({ type, text });
     }
   }
 

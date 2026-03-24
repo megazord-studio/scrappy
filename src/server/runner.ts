@@ -100,6 +100,7 @@ export async function runUpdateJob(job: Job): Promise<void> {
       filter: job.params.filter,
       recordIds,
       serpApiKey: SERPAPI_KEY,
+      deepSearch: job.params.deepSearch === "true",
       emit,
     });
 

@@ -26,18 +26,38 @@ Any new links discovered in stage 2 are added to the candidate pool for stage 3.
 
 ### Stage 3 — Follow promising links
 
-If still no result, outbound links from the page are scored by relevance and the best candidates are scraped individually:
+If still no result, outbound links from the page are scored by relevance and the best candidates are scraped individually.
+
+**Three-tier keyword matching** — links are scored using three groups with different weights:
 
 | Signal | Score |
 |---|---|
 | `.pdf` extension | +3 |
-| URL path matches schema keywords (field names, tracked fields, field descriptions) | +2 |
-| Anchor text matches schema keywords | +2 |
-| No path-level keyword signal | ×0.5 |
+| URL path contains a **tracked field** keyword (e.g. `zinssatz` → `zinssaetze.html`) | +4 |
+| URL path matches a **generic detail/pricing pattern** (e.g. `konditionen`, `tarife`, `specs`, `pricing`, `taux`) | +3 |
+| Anchor text contains a tracked field keyword | +3 |
+| URL path contains a general schema keyword (field names, description words) | +2 |
+| Anchor text contains a general schema keyword | +2 |
+| No path-level keyword signal at all | ×0.5 (anchor-text only links are weaker) |
 
-Keywords are derived from the schema — field names, tracked field names, and words from field descriptions. This means the scoring is fully generic: a gym pricing schema scores links containing "preis" or "abo", while a pension schema scores links containing "rendite" or "vorsorge", based on whatever fields you've defined.
+Tracked field keywords (from `rateFields`) score highest because they name the exact data being sought. Generic detail/pricing path patterns (tier 2) catch common product-detail URL segments across all domains and languages — these are scored higher than general schema keywords to surface `konditionen`, `specs`, or `pricing` pages even when those words don't appear in the schema definition. Keywords are normalized before matching (German umlauts and digraph expansions are collapsed) so `zinssatz` matches `zinssaetze` in a URL.
 
-The top 5 scoring links are tried. PDFs are downloaded and parsed directly (with TLS fallback for Swiss CA certificates). HTML pages are scraped via Crawl4AI.
+**Umlaut normalization** — URL paths and anchor text are normalized before matching: German umlaut characters (ä→a, ö→o, ü→u) and their digraph expansions (ae→a, oe→o, ue→u) are collapsed. This lets the keyword `zinssatz` match `zinssaetze` in a URL path.
+
+**Non-content links are excluded** — two categories are filtered before scoring:
+- Media/font files: `.svg`, `.png`, `.jpg`, `.gif`, `.webp`, `.ico`, `.woff`, `.ttf`, `.zip`, `.xml`, `.json`
+- Login/portal paths: `/login`, `/ebanking`, `/e-banking`, `/auth`, `/secure`, `/portal`, `/signin`, `/mobilebanking`, `/onlinebanking` — these paths appear on nearly every bank site and never contain rate data
+
+The top **3 scoring links** are tried in a normal update. Each HTML page is also scanned for PDFs one level deeper (up to 5 per page). PDFs are downloaded and parsed directly with TLS fallback for Swiss CA certificates.
+
+### Deep search
+
+A per-row action in the records table. Runs the same 3-stage pipeline with expanded limits:
+
+- Up to **10 candidate links** followed (instead of 3)
+- Up to **10 PDFs** scanned per linked page (instead of 5)
+
+Use this when a regular update fails to find a value for a specific row.
 
 ## URL routing
 
@@ -64,10 +84,13 @@ Changed rows get a new `_lastUpdated` timestamp.
 | `input` | Dataset name to update |
 | `schema` | Schema ID (from UI) or path to TypeScript schema file |
 | `filter` | Optional string — only update rows where any dedupeKey field contains this value |
+| `deepSearch` | Boolean — expand link candidate limit to 10/10 (see above) |
 
 ## UI
 
-In the Scrape screen, click `↻` next to any dataset in the sidebar. The Update panel opens with the schema auto-selected from the most recent job that used that dataset. Set an optional filter and click **↻ Run**. The monitor view shows updated rows in real time (green = value changed). Click any updated row in the monitor to jump back to that dataset.
+In the Datasets screen, click `↻` next to any dataset in the sidebar. The Update panel opens with the schema auto-selected from the most recent job that used that dataset. Set an optional filter and click **↻ Run**. The monitor view shows updated rows in real time (green = value changed). Click any updated row in the monitor to jump back to that dataset.
+
+To deep search a specific row, open the row action menu (⋯) in the records table and choose **⌕ Deep search**. This starts a single-record update job with the expanded limits.
 
 ## Requirements
 

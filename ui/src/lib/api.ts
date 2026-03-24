@@ -58,6 +58,7 @@ export async function startUpdateJob(body: {
   schema: string;
   filter?: string;
   recordId?: number;
+  deepSearch?: boolean;
 }): Promise<{ id: string; error?: string }> {
   return apiFetch('/jobs/update', {
     method: 'POST',
@@ -91,6 +92,15 @@ export async function deleteSchema(id: string): Promise<{ error?: string }> {
 
 export async function getOutputs(): Promise<{ outputs: string[] }> {
   return apiFetch('/outputs');
+}
+
+export async function getDatasetSchema(dataset: string): Promise<string | null> {
+  try {
+    const res: { schemaId: string | null } = await apiFetch(`/outputs/${encodeURIComponent(dataset)}/schema`);
+    return res.schemaId;
+  } catch {
+    return null;
+  }
 }
 
 export async function getRecords(file: string): Promise<RecordsResponse> {

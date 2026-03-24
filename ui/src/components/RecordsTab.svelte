@@ -158,13 +158,13 @@
 
   let updateFeedback = $state<{ origIdx: number; msg: string } | null>(null);
 
-  async function handleUpdateRecord(row: Record<string, string>, origIdx: number) {
+  async function handleUpdateRecord(row: Record<string, string>, origIdx: number, deepSearch = false) {
     if (!file || !schemaId) return;
     const recordId = Number(row['_id']);
     if (!Number.isFinite(recordId)) return;
     try {
-      await startUpdateJob({ input: file, schema: schemaId, recordId });
-      updateFeedback = { origIdx, msg: 'Update job started — check Monitor' };
+      await startUpdateJob({ input: file, schema: schemaId, recordId, deepSearch: deepSearch || undefined });
+      updateFeedback = { origIdx, msg: deepSearch ? 'Deep search started — check Monitor' : 'Update job started — check Monitor' };
       setTimeout(() => { updateFeedback = null; }, 4000);
     } catch (e) {
       alert('Update failed: ' + (e as Error).message);
@@ -257,6 +257,7 @@
       <div class="row-dropdown" style="top:{menuY}px;left:{menuX}px" onclick={(e) => e.stopPropagation()}>
         {#if schemaId}
           <button class="row-menu-item" onclick={() => { handleUpdateRecord(openRow.row, openRow.origIdx); openMenuIdx = null; }}>↻ Re-scrape</button>
+          <button class="row-menu-item" onclick={() => { handleUpdateRecord(openRow.row, openRow.origIdx, true); openMenuIdx = null; }}>⌕ Deep search</button>
         {/if}
         <button class="row-menu-item row-menu-item--del" onclick={() => { handleDeleteRecord(Number(openRow.row['_id'])); openMenuIdx = null; }}>✕ Delete</button>
       </div>

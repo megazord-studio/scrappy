@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { startIndexJob, startUpdateJob, sendChat, getOutputs, deleteOutput, deleteSchema } from '../lib/api';
+  import { startIndexJob, startUpdateJob, sendChat, getOutputs, deleteOutput, deleteSchema, getDatasetSchema } from '../lib/api';
   import { jobsStore } from '../stores/jobs.svelte';
   import RecordsTab from './RecordsTab.svelte';
 
@@ -40,8 +40,13 @@
   let chatInput = $state('');
   let chatLoading = $state(false);
 
+  // Auto-select the schema that was used to create the selected dataset
   $effect(() => {
-    if (!updateSchema) updateSchema = schemas[0]?.id ?? '';
+    const ds = selectedDataset;
+    if (!ds) return;
+    getDatasetSchema(ds).then(id => {
+      updateSchema = id ?? schemas[0]?.id ?? '';
+    });
   });
 
   const activeJob = $derived(

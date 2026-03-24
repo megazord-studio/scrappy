@@ -67,6 +67,16 @@ app.post("/settings", async (req) => {
 // --- schemas & outputs ---
 app.get("/schemas", async () => ({ schemas: listSchemas() }));
 app.get("/outputs", async () => ({ outputs: listOutputs() }));
+app.get("/outputs/:dataset/schema", async (req, reply) => {
+  const { dataset } = req.params as { dataset: string };
+  const name = dataset.replace(/\.csv$/i, "");
+  const row = db.prepare(
+    "SELECT params FROM jobs WHERE type='index' AND json_extract(params, '$.output') = ? ORDER BY started_at DESC LIMIT 1"
+  ).get(name) as { params: string } | undefined;
+  if (!row) return reply.code(404).send({ schemaId: null });
+  const schemaId = (JSON.parse(row.params) as Record<string, string>).schema ?? null;
+  return { schemaId };
+});
 
 // --- schema CRUD ---
 app.get("/schemas/:id", async (req, reply) => {
@@ -126,13 +136,14 @@ app.post("/jobs/index", async (req, reply) => {
 app.post("/jobs/update", async (req, reply) => {
   if (!requireApiKey(req, reply)) return;
   const body = req.body as Record<string, string | number>;
-  const { input, schema, filter, recordId } = body as { input: string; schema: string; filter?: string; recordId?: number };
+  const { input, schema, filter, recordId, deepSearch } = body as { input: string; schema: string; filter?: string; recordId?: number; deepSearch?: boolean };
   if (!input || !schema) {
     return reply.code(400).send({ error: "input, schema required" });
   }
   const params: Record<string, string> = { input, schema };
   if (filter) params.filter = filter;
   if (recordId != null) params.recordId = String(recordId);
+  if (deepSearch) params.deepSearch = "true";
   const job = createJob("update", params);
   runUpdateJob(job); // fire and forget
   return { id: job.id };

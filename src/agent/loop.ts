@@ -16,6 +16,7 @@ interface ToolInput {
   url?: string;
   source_url?: string;
   records?: ExtractedRecord[];
+  estimated_total?: number;
 }
 
 function normalizeUrl(url: string): string {
@@ -90,7 +91,7 @@ ${schemaDef.namingRules && schemaDef.namingRules.length > 0 ? `Naming rules (cri
     {
       name: "finish",
       description:
-        "Call this when you have collected all available data and are confident in the results. Pass all extracted records.",
+        "Call this when you have collected all available data and are confident in the results. You must estimate how many total results exist for this topic before finishing — use your searches and scrapes to inform this estimate.",
       input_schema: {
         type: "object" as const,
         properties: {
@@ -99,8 +100,12 @@ ${schemaDef.namingRules && schemaDef.namingRules.length > 0 ? `Naming rules (cri
             description: "All extracted records",
             items: { type: "object" },
           },
+          estimated_total: {
+            type: "number",
+            description: "Your estimate of how many total results exist for this topic (not just what you found — how many exist in total). Base this on what you saw across comparison pages, search results, and provider pages.",
+          },
         },
-        required: ["records"],
+        required: ["records", "estimated_total"],
       },
     },
   ];
@@ -132,9 +137,10 @@ ${fieldList}
 ## Workflow — follow exactly
 1. Plan: briefly note which queries you will run.
 2. Search: call search_google for 2-3 queries from different angles (you may call multiple in parallel).
-3. Scrape comparison portals first (moneyland.ch, comparis.ch, finpension.ch, evaluno.ch, etc.) — they list many providers on one page.
-4. After EACH scrape_url, immediately call extract_structured_data with all records you found (pass empty array if none — still required). For comparison site pages: extract every provider record listed; leave the url field blank if you only have a comparison site URL.
-5. From comparison pages, collect all links to individual provider/bank pages and scrape those too — official pages have authoritative data and you should prefer their records.
+3. When available, scrape overview or comparison pages first — they list many providers in one place. But also follow organic search results directly to provider pages; not every topic has a comparison portal.
+4. After EACH scrape_url, immediately call extract_structured_data with all records you found (pass empty array if none — still required). For overview/comparison pages: extract every provider record listed; leave the url field blank if you only have a comparison site URL.
+5. From overview pages, collect all links to individual provider/entity pages and scrape those too — official pages have authoritative data and you should prefer their records.
+5b. If a provider/entity page yields 0 records because required fields aren't shown on the landing page, check the links found on that page for a detail, pricing, or specifications subpage and scrape that before moving on.
 6. Keep searching and scraping until all referenced providers have been visited. Most topics have 20–50+ providers.
 7. Only call finish after exhausting all known provider pages AND running follow-up searches to catch missed ones.
 
@@ -240,9 +246,11 @@ export async function runAgent(
     // Handle finish synchronously before dispatching parallel work
     const finishBlock = toolBlocks.find((b) => b.name === "finish");
     if (finishBlock) {
-      const minScrapes = Math.min(25, Math.floor(config.maxIterations * 0.8));
-      const tooFewScrapes = visitedUrls.size < minScrapes;
+      const finishInput = finishBlock.input as ToolInput;
+      const estimatedTotal = typeof finishInput.estimated_total === "number" ? finishInput.estimated_total : null;
       const tooFewRecords = allRecords.length < 5 && visitedUrls.size >= 5;
+      // Reject if agent found significantly fewer than its own estimate
+      const belowEstimate = estimatedTotal !== null && allRecords.length < estimatedTotal * 0.7;
       // Check if there are providers only seen on comparison sites with no official record yet
       const officialProviders = new Set(
         allRecords.filter(r => r._dataSource === "official").map(r => String(r[config.schemaDef.dedupeKey[1] ?? ""] ?? "").toLowerCase())
@@ -254,14 +262,14 @@ export async function runAgent(
       const uniqueComparisonOnly = [...new Set(comparisonOnlyProviders)].slice(0, 5);
       const hasUnvisitedProviders = uniqueComparisonOnly.length > 0;
       const notNearEnd = iteration < config.maxIterations - 3;
-      if ((tooFewScrapes || tooFewRecords || hasUnvisitedProviders) && notNearEnd) {
+      if ((tooFewRecords || belowEstimate || hasUnvisitedProviders) && notNearEnd) {
         const reason = tooFewRecords
           ? `only ${allRecords.length} records found so far — keep scraping more provider pages`
-          : hasUnvisitedProviders
-          ? `these providers only have comparison data, no official pages scraped yet: ${uniqueComparisonOnly.join(", ")}`
-          : `only ${visitedUrls.size} pages scraped out of expected ~${minScrapes}`;
+          : belowEstimate
+          ? `you estimated ${estimatedTotal} total results but only found ${allRecords.length} — keep searching and scraping to reach your estimate`
+          : `these providers only have comparison data, no official pages scraped yet: ${uniqueComparisonOnly.join(", ")}`;
         log("log", { message: `Finish rejected (${reason}). Continuing…` });
-        messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: finishBlock.id, content: `Not done yet — ${reason}. Search for and scrape the official pages for these providers.` }] });
+        messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: finishBlock.id, content: `Not done yet — ${reason}.` }] });
         continue;
       }
       const input = finishBlock.input as ToolInput;
@@ -341,7 +349,11 @@ export async function runAgent(
             allRecords.push(...tagged);
             if (onRecords && tagged.length > 0) await onRecords(tagged);
             log("extract", { url: input.source_url, count: records.length, total: allRecords.length });
-            resultContent = JSON.stringify({ saved: records.length, total_so_far: allRecords.length });
+            if (records.length === 0) {
+              resultContent = JSON.stringify({ saved: 0, total_so_far: allRecords.length, hint: "No records saved — required fields were likely not shown on this page. Before moving on, check the links returned by the last scrape_url call for a more specific subpage (detail, pricing, specs page) and scrape that." });
+            } else {
+              resultContent = JSON.stringify({ saved: records.length, total_so_far: allRecords.length });
+            }
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
