@@ -150,6 +150,7 @@ ${fieldList}
 - You may call multiple search_google in parallel; for scrape_url try to batch multiple at once too
 - Never scrape the same URL twice
 - Only save records where all required fields are clearly stated — no guessing
+- Search queries: use natural language phrases — avoid site: operators, inurl:, and excessive quoted strings; these restrict results. Reserve them only for very targeted follow-up lookups.
 - Records collected so far: ${recordCount ?? 0}${seedSection}${visitedSection}`;
 }
 
