@@ -63,7 +63,8 @@ Target schema fields:
 ${fieldDescriptions}
 
 ${schemaDef.namingRules && schemaDef.namingRules.length > 0 ? `Naming rules (critical for deduplication):\n${schemaDef.namingRules.map((r) => `- ${r}`).join("\n")}\n\n` : ""}Rules:
-- Only include records where all required fields are clearly stated on the page — no guessing
+- Save a record whenever the identity fields (${schemaDef.dedupeKey.join(", ")}) are clearly found on the page — even if other fields are missing. Leave missing fields as empty string "". Missing fields will be filled in later by an update job.
+- Never guess or invent values — only include what is clearly stated. The identity fields must be accurate.
 - One record per distinct product or entity
 - If a field has tiered values (e.g. varies by balance tier), capture them in a single record using the provider's own notation (e.g. "0.39%–0.75%" or "from 0.39%") — do NOT create separate records per tier
 - URL field: use the provider's own official page URL if known; leave blank rather than using a comparison site URL`,
@@ -149,7 +150,7 @@ ${fieldList}
 - Call extract_structured_data after EVERY scrape_url call — no exceptions, even for 0 records
 - You may call multiple search_google in parallel; for scrape_url try to batch multiple at once too
 - Never scrape the same URL twice
-- Only save records where all required fields are clearly stated — no guessing
+- Save records whenever the identity fields are found — other fields can be blank and filled in later by an update job. Never guess or invent values.
 - Search queries: use natural language phrases — avoid site: operators, inurl:, and excessive quoted strings; these restrict results. Reserve them only for very targeted follow-up lookups.
 - Records collected so far: ${recordCount ?? 0}${seedSection}${visitedSection}`;
 }
@@ -351,7 +352,7 @@ export async function runAgent(
             if (onRecords && tagged.length > 0) await onRecords(tagged);
             log("extract", { url: input.source_url, count: records.length, total: allRecords.length });
             if (records.length === 0) {
-              resultContent = JSON.stringify({ saved: 0, total_so_far: allRecords.length, hint: "No records saved — required fields were likely not shown on this page. Before moving on, check the links returned by the last scrape_url call for a more specific subpage (detail, pricing, specs page) and scrape that." });
+              resultContent = JSON.stringify({ saved: 0, total_so_far: allRecords.length, hint: "No records saved — the identity fields were not found on this page. If this is a provider/entity page, check the links from the last scrape_url for a more specific subpage and scrape that." });
             } else {
               resultContent = JSON.stringify({ saved: records.length, total_so_far: allRecords.length });
             }
