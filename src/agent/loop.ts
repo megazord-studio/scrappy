@@ -139,7 +139,7 @@ ${fieldList}
 1. Plan: briefly note which queries you will run.
 2. Search: call search_google for 2-3 queries from different angles (you may call multiple in parallel).
 3. When available, scrape overview or comparison pages first — they list many providers in one place. But also follow organic search results directly to provider pages; not every topic has a comparison portal.
-4. After EACH scrape_url, immediately call extract_structured_data with all records you found (pass empty array if none — still required). For overview/comparison pages: extract every provider record listed; leave the url field blank if you only have a comparison site URL.
+4. After scraping, call extract_structured_data for every page you scraped — batch all extract calls in the same response. Do not spread them across multiple iterations.
 5. From overview pages, collect all links to individual provider/entity pages and scrape those too — official pages have authoritative data and you should prefer their records.
 5b. If a provider/entity page yields 0 records because required fields aren't shown on the landing page, check the links found on that page for a detail, pricing, or specifications subpage and scrape that before moving on.
 6. Keep searching and scraping until all referenced providers have been visited. Most topics have 20–50+ providers.
