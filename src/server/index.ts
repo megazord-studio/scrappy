@@ -135,8 +135,8 @@ app.post("/jobs/index", async (req, reply) => {
 // --- start update job ---
 app.post("/jobs/update", async (req, reply) => {
   if (!requireApiKey(req, reply)) return;
-  const body = req.body as Record<string, string | number>;
-  const { input, schema, filter, recordId, deepSearch } = body as { input: string; schema: string; filter?: string; recordId?: number; deepSearch?: boolean };
+  const body = req.body as { input: string; schema: string; filter?: string; recordId?: number; deepSearch?: boolean };
+  const { input, schema, filter, recordId, deepSearch } = body;
   if (!input || !schema) {
     return reply.code(400).send({ error: "input, schema required" });
   }

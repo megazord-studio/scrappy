@@ -35,6 +35,7 @@
   let createSchema = $state('');
   let createOutput = $state('');
   let createIterations = $state(40);
+  let createSeedUrls = $state('');
   let submitting = $state(false);
   let chatHistory = $state<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
   let chatInput = $state('');
@@ -88,7 +89,8 @@
   async function startCreate() {
     if (!createTopic || !createSchema || !createOutput) return;
     submitting = true;
-    await startIndexJob({ topic: createTopic, schema: createSchema, output: createOutput, maxIterations: createIterations });
+    const seedUrls = createSeedUrls.trim() || undefined;
+    await startIndexJob({ topic: createTopic, schema: createSchema, output: createOutput, maxIterations: createIterations, seedUrls });
     submitting = false;
     activePanel = null;
     await refreshDatasets();
@@ -206,6 +208,10 @@
             <div class="ds-field">
               <label class="ds-label" for="create-iterations">Max iterations</label>
               <input id="create-iterations" class="ds-input" type="number" bind:value={createIterations} min="1" max="200" />
+            </div>
+            <div class="ds-field ds-field--wide">
+              <label class="ds-label" for="create-seed-urls">Seed URLs <span class="ds-label-hint">(one per line, optional)</span></label>
+              <textarea id="create-seed-urls" class="ds-input ds-textarea" bind:value={createSeedUrls} placeholder="https://example.com/products&#10;https://other.com/compare" rows="3"></textarea>
             </div>
           </div>
           <button class="ds-submit ds-submit--teal" onclick={startCreate} disabled={submitting || !createTopic || !createSchema || !createOutput}>
@@ -650,6 +656,8 @@
   }
   .ds-input:focus, .ds-select:focus { border-color: #22d3ee; outline: none; }
   .ds-input::placeholder { color: #b8b6b0; }
+  .ds-textarea { resize: vertical; min-height: 4.5rem; }
+  .ds-label-hint { font-weight: 400; text-transform: none; letter-spacing: 0; color: #9b9890; }
 
   .ds-submit {
     all: unset; cursor: pointer;

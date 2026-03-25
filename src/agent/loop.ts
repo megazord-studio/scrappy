@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { z } from "zod";
 import { searchGoogle } from "../tools/serp.js";
 import { scrapeUrl } from "../tools/crawl.js";
 import type { RunConfig, ExtractedRecord, EmitFn } from "../types.js";
@@ -30,6 +31,13 @@ function buildTools(schemaDef: RunConfig["schemaDef"]): Anthropic.Tool[] {
   const fieldDescriptions = Object.entries(schemaDef.fieldDescriptions)
     .map(([k, v]) => `  - ${k}: ${v}`)
     .join("\n");
+
+  // Required identity fields = dedupeKey fields that are not optional in the schema
+  const requiredDedupeFields = schemaDef.dedupeKey.filter(f => {
+    const shape = schemaDef.schema.shape[f];
+    return shape && !(shape instanceof z.ZodOptional);
+  });
+  const identityFields = requiredDedupeFields.length > 0 ? requiredDedupeFields : schemaDef.dedupeKey;
 
   return [
     {
@@ -63,7 +71,8 @@ Target schema fields:
 ${fieldDescriptions}
 
 ${schemaDef.namingRules && schemaDef.namingRules.length > 0 ? `Naming rules (critical for deduplication):\n${schemaDef.namingRules.map((r) => `- ${r}`).join("\n")}\n\n` : ""}Rules:
-- Save a record whenever the identity fields (${schemaDef.dedupeKey.join(", ")}) are clearly found on the page — even if other fields are missing. Leave missing fields as empty string "". Missing fields will be filled in later by an update job.
+- Save a record whenever the required identity fields (${identityFields.join(", ")}) are clearly found on the page — even if other fields are missing. Leave missing fields as empty string "". Missing fields will be filled in later by an update job.
+- Extract ALL matching entities on the page, not just the ones most related to the research topic. The topic guides your searches; extraction is purely schema-driven.
 - Never guess or invent values — only include what is clearly stated. The identity fields must be accurate.
 - One record per distinct product or entity
 - If a field has tiered values (e.g. varies by balance tier), capture them in a single record using the provider's own notation (e.g. "0.39%–0.75%" or "from 0.39%") — do NOT create separate records per tier
