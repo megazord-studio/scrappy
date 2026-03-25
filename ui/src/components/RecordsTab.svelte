@@ -283,7 +283,7 @@
         }) as dr (dr.origIdx)}
           {#if dr.isFirstOfGroup && dr.mergeKeepId !== null}
             <tr class="dup-group-header" style="--group-color:{dr.borderColor}">
-              <td colspan={headers.length}>
+              <td colspan={headers.length + 1}>
                 <div class="dup-header-inner">
                   <span class="dup-conf-badge {dr.mergeConfidence}">{dr.mergeConfidence}</span>
                   <span class="dup-group-desc">{dr.groupSize} rows</span>
