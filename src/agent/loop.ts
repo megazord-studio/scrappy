@@ -85,6 +85,18 @@ export async function runAgent(
     }
 
     if (response.stop_reason === "end_turn") {
+      // If the agent stopped without calling finish despite having scraped pages,
+      // it likely forgot to extract or finish — nudge it to continue.
+      const hasWork = visitedUrls.size > 0;
+      const notNearEnd = iteration < config.maxIterations - 2;
+      if (hasWork && notNearEnd) {
+        const nudge = allRecords.length === 0
+          ? "You scraped pages but have not called extract_structured_data yet. Extract records from the scraped content now, then call finish when done."
+          : `You have ${allRecords.length} records so far but did not call finish. Call finish to complete, or continue scraping for more coverage.`;
+        log("log", { message: `Agent stopped (end_turn) without finishing — nudging (${allRecords.length} records so far)` });
+        messages.push({ role: "user", content: nudge });
+        continue;
+      }
       log("log", { message: "Agent finished (end_turn)" });
       break;
     }
