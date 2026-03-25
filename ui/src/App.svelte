@@ -2,26 +2,44 @@
   import Header from './components/Header.svelte';
   import MonitorScreen from './components/MonitorScreen.svelte';
   import DatasetsScreen from './components/DatasetsScreen.svelte';
+  import EntitiesScreen from './components/EntitiesScreen.svelte';
   import SettingsModal from './components/modals/SettingsModal.svelte';
   import SchemaModal from './components/modals/SchemaModal.svelte';
   import { jobsStore } from './stores/jobs.svelte';
   import { dashStore } from './stores/dashboard.svelte';
   import { getSchemas, getOutputs, getSettings } from './lib/api';
 
-  function parseHash(): 'monitor' | 'datasets' {
-    const h = window.location.hash.slice(1);
-    return h === 'datasets' ? 'datasets' : 'monitor';
+  type Screen = 'monitor' | 'datasets' | 'entities';
+
+  function parseHash(): { screen: Screen; entityKey?: string } {
+    const raw = window.location.hash.slice(1);
+    const [path, query] = raw.split('?');
+    const params = new URLSearchParams(query ?? '');
+    if (path === 'datasets') return { screen: 'datasets' };
+    if (path === 'entities') return { screen: 'entities', entityKey: params.get('e') ?? undefined };
+    return { screen: 'monitor' };
   }
 
-  function navigate(s: 'monitor' | 'datasets') {
+  function navigate(s: Screen, entityKey?: string) {
     screen = s;
-    window.location.hash = s;
+    if (s === 'entities' && entityKey) {
+      window.location.hash = `entities?e=${encodeURIComponent(entityKey)}`;
+      initialEntityKey = entityKey;
+    } else {
+      window.location.hash = s;
+    }
   }
 
-  let screen = $state<'monitor' | 'datasets'>(parseHash());
+  const parsed = parseHash();
+  let screen = $state<Screen>(parsed.screen);
+  let initialEntityKey = $state<string | undefined>(parsed.entityKey);
 
   $effect(() => {
-    function onHashChange() { screen = parseHash(); }
+    function onHashChange() {
+      const p = parseHash();
+      screen = p.screen;
+      if (p.entityKey) initialEntityKey = p.entityKey;
+    }
     window.addEventListener('hashchange', onHashChange);
     return () => window.removeEventListener('hashchange', onHashChange);
   });
@@ -79,7 +97,10 @@
       onSchemaEdit={(id) => { editingSchemaId = id; schemaModalOpen = true; }}
       onNewSchema={() => { editingSchemaId = null; schemaModalOpen = true; }}
       onSelectsReload={loadSelects}
+      onNavigateEntity={(key) => navigate('entities', key)}
     />
+  {:else if screen === 'entities'}
+    <EntitiesScreen initialKey={initialEntityKey} />
   {/if}
 </main>
 

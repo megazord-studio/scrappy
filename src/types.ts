@@ -14,6 +14,8 @@ export interface SchemaDefinition {
   namingRules?: string[];
   /** URLs to scrape first, before the agent starts searching */
   seedUrls?: string[];
+  /** Which field identifies the real-world entity (provider, seller, school…) for cross-dataset linking */
+  entityField?: string;
 }
 
 export interface RunConfig {

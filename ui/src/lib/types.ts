@@ -91,6 +91,24 @@ export interface Schema {
   rate_fields: string;
   /** JSON-encoded string[] */
   naming_rules?: string;
+  entity_field?: string;
+}
+
+export interface Entity {
+  id: number | null;
+  normalized_name: string;
+  display_name: string;
+  description: string | null;
+  logo_url: string | null;
+  external_url: string | null;
+  record_count: number;
+  datasets: string[];
+}
+
+export interface EntityDataset {
+  dataset: string;
+  schema_id: string | null;
+  records: Record<string, string>[];
 }
 
 export interface SchemaField {

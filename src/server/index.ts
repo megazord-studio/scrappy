@@ -11,6 +11,7 @@ import { db } from "./db.js";
 import { readRecords, readRecordsPaginated, deduplicateDataset, mergeRecords, exportToCsv, deleteDataset, markNotDuplicate, deleteRecordsByIds } from "../tools/records.js";
 import { dbGetSchemaRow, dbGetSchema, dbInsertSchema, dbUpdateSchema, dbDeleteSchema, type SchemaInput } from "./schema-store.js";
 import { seedSchemasFromFiles } from "./seed-schemas.js";
+import { normalizeEntityName } from "../lib/normalize.js";
 
 const app = Fastify({ logger: false });
 
@@ -327,6 +328,133 @@ app.get("/outputs/:dataset/records", async (req, reply) => {
   if (total === 0) return { headers: [], rows: [], total: 0, limit, offset };
   const headers = Object.keys(rows[0]).filter((k) => k !== "_id");
   return { headers, rows, total, limit, offset };
+});
+
+// --- entities ---
+
+interface DbEntityRow {
+  id: number;
+  normalized_name: string;
+  display_name: string;
+  description: string | null;
+  logo_url: string | null;
+  external_url: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+app.get("/entities", async () => {
+  const schemas = db.prepare("SELECT id, entity_field FROM schemas WHERE entity_field IS NOT NULL AND entity_field != ''")
+    .all() as { id: string; entity_field: string }[];
+
+  const entityFields = [...new Set(schemas.map(s => s.entity_field))];
+
+  // normalized_name → { displayNames: Map<rawName, count>, datasets: Set<string>, count }
+  const entityMap = new Map<string, { displayNames: Map<string, number>; datasets: Set<string>; count: number }>();
+
+  for (const fieldName of entityFields) {
+    const rows = db.prepare(
+      `SELECT dataset, json_extract(data, '$.' || ?) as val FROM records WHERE json_extract(data, '$.' || ?) IS NOT NULL AND json_extract(data, '$.' || ?) != ''`
+    ).all(fieldName, fieldName, fieldName) as { dataset: string; val: string }[];
+
+    for (const row of rows) {
+      const normalized = normalizeEntityName(row.val);
+      if (!normalized) continue;
+      if (!entityMap.has(normalized)) entityMap.set(normalized, { displayNames: new Map(), datasets: new Set(), count: 0 });
+      const entry = entityMap.get(normalized)!;
+      entry.datasets.add(row.dataset);
+      entry.count++;
+      entry.displayNames.set(row.val, (entry.displayNames.get(row.val) ?? 0) + 1);
+    }
+  }
+
+  const enrichments = db.prepare("SELECT * FROM entities").all() as DbEntityRow[];
+  const enrichMap = new Map(enrichments.map(e => [e.normalized_name, e]));
+
+  const entities = Array.from(entityMap.entries()).map(([normalized_name, info]) => {
+    const enrich = enrichMap.get(normalized_name);
+    const display_name = enrich?.display_name
+      ?? [...info.displayNames.entries()].sort((a, b) => b[1] - a[1])[0]?.[0]
+      ?? normalized_name;
+    return {
+      id: enrich?.id ?? null,
+      normalized_name,
+      display_name,
+      description: enrich?.description ?? null,
+      logo_url: enrich?.logo_url ?? null,
+      external_url: enrich?.external_url ?? null,
+      record_count: info.count,
+      datasets: [...info.datasets],
+    };
+  }).sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+  return { entities };
+});
+
+app.get("/entities/:key/records", async (req, reply) => {
+  const key = decodeURIComponent((req.params as { key: string }).key);
+  const schemas = db.prepare("SELECT id, entity_field FROM schemas WHERE entity_field IS NOT NULL AND entity_field != ''")
+    .all() as { id: string; entity_field: string }[];
+  const entityFields = [...new Set(schemas.map(s => s.entity_field))];
+
+  const datasetMap = new Map<string, { schema_id: string | null; records: Record<string, unknown>[] }>();
+
+  for (const fieldName of entityFields) {
+    const rows = db.prepare(
+      `SELECT id, dataset, data FROM records WHERE json_extract(data, '$.' || ?) IS NOT NULL AND json_extract(data, '$.' || ?) != ''`
+    ).all(fieldName, fieldName) as { id: number; dataset: string; data: string }[];
+
+    for (const row of rows) {
+      const data = JSON.parse(row.data) as Record<string, unknown>;
+      if (normalizeEntityName(String(data[fieldName] ?? '')) !== key) continue;
+      if (!datasetMap.has(row.dataset)) {
+        const jobRow = db.prepare(
+          "SELECT params FROM jobs WHERE type='index' AND json_extract(params, '$.output') = ? ORDER BY started_at DESC LIMIT 1"
+        ).get(row.dataset) as { params: string } | undefined;
+        const schema_id = jobRow ? ((JSON.parse(jobRow.params) as Record<string, string>).schema ?? null) : null;
+        datasetMap.set(row.dataset, { schema_id, records: [] });
+      }
+      datasetMap.get(row.dataset)!.records.push({ ...data, _id: String(row.id) });
+    }
+  }
+
+  const enrich = db.prepare("SELECT display_name FROM entities WHERE normalized_name = ?").get(key) as { display_name: string } | undefined;
+  const firstRecord = [...datasetMap.values()][0]?.records[0];
+  const entityFieldName = entityFields[0];
+  const display_name = enrich?.display_name
+    ?? (firstRecord && entityFieldName ? String(firstRecord[entityFieldName] ?? key) : key);
+
+  return {
+    display_name,
+    datasets: [...datasetMap.entries()].map(([dataset, info]) => ({
+      dataset,
+      schema_id: info.schema_id,
+      records: info.records,
+    })),
+  };
+});
+
+app.put("/entities/:key", async (req) => {
+  const key = decodeURIComponent((req.params as { key: string }).key);
+  const body = req.body as { display_name: string; description?: string; logo_url?: string; external_url?: string };
+  const now = new Date().toISOString();
+  db.prepare(`
+    INSERT INTO entities (normalized_name, display_name, description, logo_url, external_url, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(normalized_name) DO UPDATE SET
+      display_name=excluded.display_name,
+      description=excluded.description,
+      logo_url=excluded.logo_url,
+      external_url=excluded.external_url,
+      updated_at=excluded.updated_at
+  `).run(key, body.display_name, body.description ?? null, body.logo_url ?? null, body.external_url ?? null, now, now);
+  return db.prepare("SELECT * FROM entities WHERE normalized_name = ?").get(key) as DbEntityRow;
+});
+
+app.delete("/entities/:key", async (req) => {
+  const key = decodeURIComponent((req.params as { key: string }).key);
+  db.prepare("DELETE FROM entities WHERE normalized_name = ?").run(key);
+  return { ok: true };
 });
 
 // --- chat ---

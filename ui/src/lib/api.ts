@@ -1,4 +1,4 @@
-import type { Job, Schema, Settings, RecordsResponse } from './types';
+import type { Job, Schema, Settings, RecordsResponse, Entity, EntityDataset } from './types';
 
 let _apiKey = '';
 export function setApiKey(key: string) { _apiKey = key; }
@@ -151,6 +151,26 @@ export async function saveSettings(body: Settings): Promise<Response> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
+}
+
+export async function getEntities(): Promise<{ entities: Entity[] }> {
+  return apiFetch('/entities');
+}
+
+export async function getEntityRecords(key: string): Promise<{ display_name: string; datasets: EntityDataset[] }> {
+  return apiFetch(`/entities/${encodeURIComponent(key)}/records`);
+}
+
+export async function saveEntity(key: string, body: { display_name: string; description?: string; logo_url?: string; external_url?: string }): Promise<Entity> {
+  return apiFetch(`/entities/${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteEntity(key: string): Promise<void> {
+  await apiFetch(`/entities/${encodeURIComponent(key)}`, { method: 'DELETE' });
 }
 
 export async function sendChat(

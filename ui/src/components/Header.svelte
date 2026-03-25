@@ -3,13 +3,14 @@
   import BotIcon from './BotIcon.svelte';
   import { getJobLabel } from '../lib/format';
 
+  type Screen = 'monitor' | 'datasets' | 'entities';
   const {
     screen,
     onScreenChange,
     onOpenSettings,
   }: {
-    screen: 'monitor' | 'datasets';
-    onScreenChange: (s: 'monitor' | 'datasets') => void;
+    screen: Screen;
+    onScreenChange: (s: Screen) => void;
     onOpenSettings: () => void;
   } = $props();
 
@@ -26,6 +27,7 @@
     <nav class="app-nav">
       <button class="nav-link" class:active={screen === 'monitor'} onclick={() => onScreenChange('monitor')}>Monitor</button>
       <button class="nav-link" class:active={screen === 'datasets'} onclick={() => onScreenChange('datasets')}>Datasets</button>
+      <button class="nav-link" class:active={screen === 'entities'} onclick={() => onScreenChange('entities')}>Entities</button>
     </nav>
     {#if runningLabel}
       <div class="running-indicator" title={runningLabel}>

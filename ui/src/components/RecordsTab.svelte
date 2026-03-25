@@ -1,18 +1,28 @@
 <script lang="ts">
-  import { getRecords, mergeRows, markNotDuplicate, deleteRecords, startUpdateJob } from '../lib/api';
+  import { getRecords, mergeRows, markNotDuplicate, deleteRecords, startUpdateJob, getSchema } from '../lib/api';
   import { buildDupGroups, groupMaxScore, dupScaleHtml } from '../lib/dedup';
-  import { DropdownMenu, ScrollArea, Tooltip, Checkbox } from 'bits-ui';
+  import { DropdownMenu, Tooltip, Checkbox } from 'bits-ui';
   import ConfirmDialog from './ConfirmDialog.svelte';
 
   const {
     file,
     refreshTick,
     schemaId = null,
+    onNavigateEntity = null,
   }: {
     file: string | null;
     refreshTick: number;
     schemaId?: string | null;
+    onNavigateEntity?: ((key: string) => void) | null;
   } = $props();
+
+  // Entity field for this schema — used to make entity column cells clickable
+  let entityField = $state<string | null>(null);
+  $effect(() => {
+    const id = schemaId;
+    if (!id) { entityField = null; return; }
+    getSchema(id).then(s => { entityField = s.entity_field ?? null; }).catch(() => { entityField = null; });
+  });
 
   interface DisplayRow {
     origIdx: number;
@@ -83,6 +93,17 @@
     } catch (e) {
       alert('Delete failed: ' + (e as Error).message);
     }
+  }
+
+  // ── Entity navigation ──────────────────────────────────────────────────────
+  function normalizeForEntity(name: string): string {
+    return name
+      .toLowerCase()
+      .trim()
+      .replace(/\b(ag|sa|gmbh|ltd|inc|co\.?|llc|corp|plc|sas|nv|bv|ug|kg|oy|ab|as|aps|spa|srl)\b\.?/gi, '')
+      .replace(/[^\w\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 
   // ── Column helpers ─────────────────────────────────────────────────────────
@@ -280,8 +301,7 @@
     {/if}
 
     <!-- Table -->
-    <ScrollArea.Root class="sa-root">
-      <ScrollArea.Viewport class="sa-viewport">
+    <div class="records-scroll">
         <table class="records-table">
           <thead>
             <tr>
@@ -355,6 +375,10 @@
                         <span class="source-badge {value}">{value}</span>
                       {/if}
                     </td>
+                  {:else if h === entityField && onNavigateEntity && value}
+                    <td class={cellClass(h)}>
+                      <button class="entity-link" onclick={() => onNavigateEntity!(normalizeForEntity(value))}>{value}</button>
+                    </td>
                   {:else if needsTooltip(h, value)}
                     <td class={cellClass(h)}>
                       <Tooltip.Root>
@@ -393,16 +417,7 @@
             {/each}
           </tbody>
         </table>
-      </ScrollArea.Viewport>
-
-      <ScrollArea.Scrollbar orientation="vertical" class="sa-bar sa-bar--v">
-        <ScrollArea.Thumb class="sa-thumb" />
-      </ScrollArea.Scrollbar>
-      <ScrollArea.Scrollbar orientation="horizontal" class="sa-bar sa-bar--h">
-        <ScrollArea.Thumb class="sa-thumb" />
-      </ScrollArea.Scrollbar>
-      <ScrollArea.Corner class="sa-corner" />
-    </ScrollArea.Root>
+    </div>
 
   </div>
   </Tooltip.Provider>
@@ -536,47 +551,12 @@
     border-radius: 1px;
   }
 
-  /* ScrollArea */
-  :global(.sa-root) {
+  /* Scroll container */
+  .records-scroll {
     flex: 1;
     min-height: 0;
-    overflow: hidden;
-    position: relative;
+    overflow: auto;
   }
-  :global(.sa-viewport) {
-    height: 100%;
-    width: 100%;
-  }
-  :global(.sa-bar) {
-    display: flex;
-    user-select: none;
-    touch-action: none;
-    background: transparent;
-  }
-  :global(.sa-bar--v) {
-    position: absolute;
-    top: 0; right: 0; bottom: 0;
-    width: 8px;
-    border-left: 1px solid #e8e6e0;
-    padding: 2px;
-  }
-  :global(.sa-bar--h) {
-    position: absolute;
-    bottom: 0; left: 0; right: 0;
-    height: 8px;
-    border-top: 1px solid #e8e6e0;
-    padding: 2px;
-    flex-direction: column;
-  }
-  :global(.sa-thumb) {
-    flex: 1;
-    background: #d0cec8;
-    border-radius: 10px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  :global(.sa-thumb:hover) { background: #a8a6a0; }
-  :global(.sa-corner) { background: #f5f3ee; }
 
   /* Cell tooltip */
   :global(.cell-tt) {
@@ -686,6 +666,21 @@
   :global(.row-menu-item--del) { color: #dc2626; }
   :global(.row-menu-item--del[data-highlighted]) { background: #fef2f2; }
   :global(.row-menu-sep) { height: 1px; background: #e8e6e0; margin: 0.2rem 0; }
+
+  /* Entity link cell button */
+  .entity-link {
+    all: unset;
+    cursor: pointer;
+    color: #0e7490;
+    text-decoration: underline;
+    text-decoration-color: color-mix(in srgb, #0e7490 40%, transparent);
+    text-underline-offset: 2px;
+    font-family: inherit;
+    font-size: inherit;
+    transition: color 0.1s;
+  }
+  .entity-link:hover { color: #0c6078; text-decoration-color: #0c6078; }
+  .entity-link:focus-visible { outline: 2px solid #22d3ee; border-radius: 2px; }
 
   /* Source badge */
   .source-badge {

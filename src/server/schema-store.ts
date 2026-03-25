@@ -17,6 +17,7 @@ export interface SchemaInput {
   url_field: string;
   rate_fields: string[];
   naming_rules?: string[];
+  entity_field?: string;
 }
 
 interface DbSchemaRow {
@@ -27,6 +28,7 @@ interface DbSchemaRow {
   url_field: string;
   rate_fields: string;
   naming_rules: string | null;
+  entity_field: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -46,6 +48,7 @@ function rowToDefinition(row: DbSchemaRow): SchemaDefinition {
     urlField: row.url_field,
     rateFields: JSON.parse(row.rate_fields),
     namingRules: row.naming_rules ? JSON.parse(row.naming_rules) : undefined,
+    entityField: row.entity_field ?? undefined,
   };
 }
 
@@ -70,8 +73,8 @@ export function dbGetSchema(db: Database.Database, id: string): SchemaDefinition
 export function dbInsertSchema(db: Database.Database, input: SchemaInput): void {
   const now = new Date().toISOString();
   db.prepare(
-    `INSERT INTO schemas (id, display_name, fields, dedupe_key, url_field, rate_fields, naming_rules, created_at, updated_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`
+    `INSERT INTO schemas (id, display_name, fields, dedupe_key, url_field, rate_fields, naming_rules, entity_field, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     normalizeId(input.id),
     input.display_name,
@@ -80,6 +83,7 @@ export function dbInsertSchema(db: Database.Database, input: SchemaInput): void 
     input.url_field,
     JSON.stringify(input.rate_fields),
     input.naming_rules ? JSON.stringify(input.naming_rules) : null,
+    input.entity_field ?? null,
     now,
     now
   );
@@ -88,7 +92,7 @@ export function dbInsertSchema(db: Database.Database, input: SchemaInput): void 
 export function dbUpdateSchema(db: Database.Database, id: string, input: Omit<SchemaInput, "id">): void {
   const nid = normalizeId(id);
   db.prepare(
-    `UPDATE schemas SET display_name=?, fields=?, dedupe_key=?, url_field=?, rate_fields=?, naming_rules=?, updated_at=? WHERE id=?`
+    `UPDATE schemas SET display_name=?, fields=?, dedupe_key=?, url_field=?, rate_fields=?, naming_rules=?, entity_field=?, updated_at=? WHERE id=?`
   ).run(
     input.display_name,
     JSON.stringify(input.fields),
@@ -96,6 +100,7 @@ export function dbUpdateSchema(db: Database.Database, id: string, input: Omit<Sc
     input.url_field,
     JSON.stringify(input.rate_fields),
     input.naming_rules ? JSON.stringify(input.naming_rules) : null,
+    input.entity_field ?? null,
     new Date().toISOString(),
     nid
   );

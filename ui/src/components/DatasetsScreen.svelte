@@ -14,12 +14,14 @@
     onSchemaEdit,
     onNewSchema,
     onSelectsReload,
+    onNavigateEntity = null,
   }: {
     outputs: string[];
     schemas: Array<{ id: string; display_name: string }>;
     onSchemaEdit: (id: string) => void;
     onNewSchema: () => void;
     onSelectsReload: () => void;
+    onNavigateEntity?: ((key: string) => void) | null;
   } = $props();
 
   let datasets = $state<string[]>([]);
@@ -172,7 +174,7 @@
           <div class="ds-records-col">
             <div class="ds-section-label">Records</div>
             <div class="records-card">
-              <RecordsTab file={selectedDataset} refreshTick={recordsTick} schemaId={schemaId || null} />
+              <RecordsTab file={selectedDataset} refreshTick={recordsTick} schemaId={schemaId || null} {onNavigateEntity} />
             </div>
           </div>
 

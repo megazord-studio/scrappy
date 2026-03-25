@@ -43,7 +43,21 @@ db.exec(`
     created_at   TEXT NOT NULL,
     updated_at   TEXT NOT NULL
   );
+
+  CREATE TABLE IF NOT EXISTS entities (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    normalized_name TEXT UNIQUE NOT NULL,
+    display_name    TEXT NOT NULL,
+    description     TEXT,
+    logo_url        TEXT,
+    external_url    TEXT,
+    created_at      TEXT DEFAULT (datetime('now')),
+    updated_at      TEXT DEFAULT (datetime('now'))
+  );
 `);
+
+// Add entity_field column to schemas if not present (idempotent migration)
+try { db.exec(`ALTER TABLE schemas ADD COLUMN entity_field TEXT`); } catch { /* already exists */ }
 
 // Mark any jobs that were running when the server last stopped as cancelled
 db.prepare(

@@ -24,6 +24,7 @@
   let displayName = $state('');
   let dedupeKey = $state('');
   let urlField = $state('url');
+  let entityField = $state('');
   let rateFields = $state('');
   let namingRules = $state('');
   let fields = $state<FieldRow[]>([{ name: '', optional: false, description: '' }]);
@@ -40,6 +41,7 @@
         displayName = '';
         dedupeKey = '';
         urlField = 'url';
+        entityField = '';
         rateFields = '';
         namingRules = '';
         fields = [{ name: '', optional: false, description: '' }];
@@ -55,6 +57,7 @@
     displayName = row.display_name;
     dedupeKey = JSON.parse(row.dedupe_key as unknown as string).join(', ');
     urlField = row.url_field;
+    entityField = row.entity_field ?? '';
     rateFields = JSON.parse(row.rate_fields as unknown as string).join(', ');
     const namingArr = row.naming_rules ? JSON.parse(row.naming_rules as unknown as string) : [];
     namingRules = namingArr.join('\n');
@@ -99,7 +102,8 @@
       return;
     }
 
-    const body = { id: idVal, display_name: dnVal, fields: flds, dedupe_key: dk, url_field: ufVal, rate_fields: rf, naming_rules: nr };
+    const efVal = entityField.trim() || undefined;
+    const body = { id: idVal, display_name: dnVal, fields: flds, dedupe_key: dk, url_field: ufVal, entity_field: efVal, rate_fields: rf, naming_rules: nr };
     const res = await saveSchema(body, editingId) as { error?: string; ok?: boolean };
     if (res.ok === false) {
       statusColor = '#f44336';
@@ -200,6 +204,17 @@
           <div class="sm-field">
             <label class="sm-label" for="sm-rate-fields">Tracked fields <span class="sm-hint">monitored for changes</span></label>
             <input id="sm-rate-fields" class="sm-input" type="text" bind:value={rateFields} placeholder="zins, ter" />
+          </div>
+        </div>
+        <div class="sm-row-1">
+          <div class="sm-field">
+            <label class="sm-label" for="sm-entity-field">Entity field <span class="sm-hint">links records to cross-dataset entities</span></label>
+            <select id="sm-entity-field" class="sm-select" bind:value={entityField}>
+              <option value="">— none —</option>
+              {#each fields.filter(f => f.name.trim()) as f}
+                <option value={f.name.trim()}>{f.name.trim()}</option>
+              {/each}
+            </select>
           </div>
         </div>
       </section>
@@ -354,7 +369,28 @@
     grid-template-columns: 1fr 1.4fr 1.4fr;
     gap: 0.75rem;
   }
+  .sm-row-1 {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
   .sm-field { display: flex; flex-direction: column; }
+
+  /* Select */
+  .sm-select {
+    width: 100%;
+    background: #0d0d0d;
+    border: 1px solid #2a2a2a;
+    border-radius: 5px;
+    padding: 0.45rem 0.65rem;
+    font-size: 0.8rem;
+    color: #e5e3df;
+    font-family: 'IBM Plex Mono', monospace;
+    box-sizing: border-box;
+    cursor: pointer;
+    appearance: none;
+  }
+  .sm-select:focus { border-color: #22d3ee; outline: none; }
 
   /* Fields list */
   .fields-list {
