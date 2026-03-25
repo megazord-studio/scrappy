@@ -156,8 +156,8 @@
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #888;
-    border-top: 1px solid #2a2a2a;
+    color: #9b9892;
+    border-top: 1px solid #e8e6e0;
     padding-top: 0.75rem;
     margin: 0.75rem 0 0.5rem;
   }
@@ -170,11 +170,12 @@
     all: unset;
     cursor: pointer;
     font-size: 0.75rem;
-    color: #4caf50;
-    border: 1px solid #2a3a2a;
+    color: #16a34a;
+    border: 1px solid #bbf7d0;
     border-radius: 3px;
     padding: 0.2rem 0.5rem;
     white-space: nowrap;
+    background: #f0fdf4;
   }
-  .copy-btn:hover { color: #fff; border-color: #4caf50; }
+  .copy-btn:hover { background: #dcfce7; }
 </style>

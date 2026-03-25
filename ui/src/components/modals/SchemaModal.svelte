@@ -368,16 +368,17 @@
 
 <style>
   .schema-modal {
-    background: #111;
-    border: 1px solid #222;
-    border-radius: 8px;
+    background: #fff;
+    border: 1px solid #dddbd5;
+    border-radius: 14px;
     width: 780px;
     max-width: 96vw;
     max-height: 90vh;
     display: flex;
     flex-direction: column;
     position: relative;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: 'DM Sans', sans-serif;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.12);
   }
 
   /* Header */
@@ -386,23 +387,24 @@
     align-items: center;
     justify-content: space-between;
     padding: 1rem 1.25rem 0.75rem;
-    border-bottom: 1px solid #1e1e1e;
+    border-bottom: 1px solid #ece9e3;
     flex-shrink: 0;
   }
   .sm-title {
+    font-family: 'Syne', sans-serif;
     font-size: 0.9rem;
-    font-weight: 600;
-    color: #e0e0e0;
+    font-weight: 700;
+    color: #0e0d0b;
   }
   .sm-close {
     all: unset;
     cursor: pointer;
-    color: #555;
+    color: #9b9892;
     font-size: 0.9rem;
     line-height: 1;
     transition: color 0.15s;
   }
-  .sm-close:hover { color: #aaa; }
+  .sm-close:hover { color: #0e0d0b; }
 
   /* Body */
   .sm-body {
@@ -417,7 +419,7 @@
   /* Sections */
   .sm-section {
     padding: 0.85rem 0;
-    border-bottom: 1px solid #191919;
+    border-bottom: 1px solid #ece9e3;
   }
   .sm-section:last-child { border-bottom: none; }
 
@@ -432,44 +434,44 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: #555;
+    color: #9b9892;
     font-family: "IBM Plex Mono", monospace;
     flex-shrink: 0;
   }
   .sm-section-desc {
     font-size: 0.65rem;
-    color: #444;
+    color: #9b9892;
   }
   .sm-hint-inline {
     font-size: 0.58rem;
     font-weight: 400;
     text-transform: none;
     letter-spacing: 0;
-    color: #444;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    color: #9b9892;
+    font-family: 'DM Sans', sans-serif;
   }
 
   /* Field label + hint */
   .sm-label {
     display: block;
     font-size: 0.7rem;
-    color: #777;
+    color: #6b6860;
     margin-bottom: 0.3rem;
   }
   .sm-hint {
     font-weight: 400;
-    color: #555;
+    color: #9b9892;
     font-size: 0.65rem;
   }
 
   /* Input */
   .sm-input {
     width: 100%;
-    background: #0d0d0d;
-    border: 1px solid #1e1e1e;
-    border-radius: 4px;
+    background: #f9f8f5;
+    border: 1px solid #dddbd5;
+    border-radius: 6px;
     padding: 0.38rem 0.55rem;
-    color: #ccc;
+    color: #0e0d0b;
     font-size: 0.78rem;
     margin-bottom: 0;
     outline: none;
@@ -477,7 +479,7 @@
     box-sizing: border-box;
   }
   .sm-input:focus { border-color: #22d3ee; }
-  .sm-input:disabled { color: #555; cursor: not-allowed; }
+  .sm-input:disabled { color: #9b9892; cursor: not-allowed; }
 
   /* Layout rows */
   .sm-row-2 {
@@ -500,13 +502,13 @@
   /* Select */
   .sm-select {
     width: 100%;
-    background: #0d0d0d;
-    border: 1px solid #2a2a2a;
-    border-radius: 5px;
+    background: #f9f8f5;
+    border: 1px solid #dddbd5;
+    border-radius: 6px;
     padding: 0.45rem 0.65rem;
     font-size: 0.8rem;
-    color: #e5e3df;
-    font-family: 'IBM Plex Mono', monospace;
+    color: #0e0d0b;
+    font-family: 'DM Sans', sans-serif;
     box-sizing: border-box;
     cursor: pointer;
     appearance: none;
@@ -521,16 +523,16 @@
     margin-bottom: 0.6rem;
   }
   .field-card {
-    background: #0d0d0d;
-    border: 1px solid #1e1e1e;
-    border-radius: 4px;
+    background: #faf9f6;
+    border: 1px solid #e8e6e0;
+    border-radius: 6px;
     padding: 0.5rem 0.6rem;
     display: flex;
     flex-direction: column;
     gap: 0.35rem;
     transition: border-color 0.15s;
   }
-  .field-card:focus-within { border-color: #2a2a2a; }
+  .field-card:focus-within { border-color: #dddbd5; }
 
   .field-top {
     display: flex;
@@ -545,7 +547,7 @@
   }
   .field-desc-input {
     font-size: 0.75rem;
-    color: #999;
+    color: #6b6860;
   }
 
   .opt-toggle {
@@ -564,16 +566,16 @@
   }
   .opt-label {
     font-size: 0.65rem;
-    color: #555;
+    color: #9b9892;
     white-space: nowrap;
     user-select: none;
   }
-  .opt-toggle:has(input:checked) .opt-label { color: #22d3ee; }
+  .opt-toggle:has(input:checked) .opt-label { color: #0e7490; }
 
   .field-remove {
     all: unset;
     cursor: pointer;
-    color: #3a3a3a;
+    color: #b8b6b0;
     font-size: 0.75rem;
     line-height: 1;
     padding: 0.2rem 0.25rem;
@@ -581,31 +583,31 @@
     flex-shrink: 0;
     transition: color 0.12s;
   }
-  .field-remove:hover { color: #f87171; }
+  .field-remove:hover { color: #dc2626; }
 
   .add-field-btn {
     all: unset;
     cursor: pointer;
     font-size: 0.7rem;
-    color: #555;
-    border: 1px dashed #252525;
-    border-radius: 4px;
+    color: #9b9892;
+    border: 1px dashed #dddbd5;
+    border-radius: 6px;
     padding: 0.35rem 0.75rem;
     width: 100%;
     box-sizing: border-box;
     text-align: center;
     transition: color 0.15s, border-color 0.15s;
   }
-  .add-field-btn:hover { color: #aaa; border-color: #3a3a3a; }
+  .add-field-btn:hover { color: #0e0d0b; border-color: #aaa; }
 
   /* Textarea */
   .sm-textarea {
     width: 100%;
-    background: #0d0d0d;
-    border: 1px solid #1e1e1e;
-    border-radius: 4px;
+    background: #f9f8f5;
+    border: 1px solid #dddbd5;
+    border-radius: 6px;
     padding: 0.45rem 0.6rem;
-    color: #ccc;
+    color: #0e0d0b;
     font-size: 0.75rem;
     font-family: "IBM Plex Mono", monospace;
     line-height: 1.6;
@@ -622,7 +624,7 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.75rem 1.25rem;
-    border-top: 1px solid #1e1e1e;
+    border-top: 1px solid #ece9e3;
     flex-shrink: 0;
   }
   .sm-status {
@@ -632,17 +634,17 @@
   .sm-save-btn {
     all: unset;
     cursor: pointer;
-    background: #22d3ee;
-    color: #000;
+    background: #0e7490;
+    color: #fff;
     font-size: 0.78rem;
     font-weight: 600;
-    border-radius: 4px;
+    border-radius: 8px;
     padding: 0.45rem 1.1rem;
     margin-left: auto;
     transition: background 0.15s;
     white-space: nowrap;
   }
-  .sm-save-btn:hover { background: #06b6d4; }
+  .sm-save-btn:hover { background: #0c6078; }
   .sm-save-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
   /* New-mode width */
@@ -668,13 +670,14 @@
     text-align: center;
   }
   .chat-empty-title {
-    font-size: 0.88rem;
-    font-weight: 600;
-    color: #ccc;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #0e0d0b;
   }
   .chat-empty-body {
     font-size: 0.75rem;
-    color: #555;
+    color: #6b6860;
     max-width: 280px;
     line-height: 1.5;
   }
@@ -689,13 +692,14 @@
     all: unset;
     cursor: pointer;
     font-size: 0.7rem;
-    color: #666;
-    border: 1px solid #2a2a2a;
+    color: #6b6860;
+    border: 1px solid #dddbd5;
     border-radius: 20px;
     padding: 0.3rem 0.75rem;
-    transition: color 0.12s, border-color 0.12s;
+    background: #faf9f6;
+    transition: color 0.12s, border-color 0.12s, background 0.12s;
   }
-  .chat-example:hover { color: #22d3ee; border-color: #22d3ee; }
+  .chat-example:hover { color: #0e7490; border-color: #67e8f9; background: #ecfeff; }
 
   .chat-messages {
     display: flex;
@@ -721,14 +725,14 @@
     white-space: pre-wrap;
   }
   .chat-msg--user .chat-bubble {
-    background: #22d3ee;
-    color: #000;
+    background: #0e7490;
+    color: #fff;
     border-bottom-right-radius: 3px;
   }
   .chat-msg--assistant .chat-bubble {
-    background: #1a1a1a;
-    color: #ccc;
-    border: 1px solid #252525;
+    background: #faf9f6;
+    color: #0e0d0b;
+    border: 1px solid #e8e6e0;
     border-bottom-left-radius: 3px;
   }
 
@@ -741,7 +745,7 @@
   .chat-dot {
     width: 5px; height: 5px;
     border-radius: 50%;
-    background: #555;
+    background: #9b9892;
     animation: chat-bounce 1.2s infinite;
   }
   .chat-dot:nth-child(2) { animation-delay: 0.2s; }
@@ -756,15 +760,15 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    background: #0d1f0d;
-    border: 1px solid #1a3a1a;
-    border-radius: 6px;
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 8px;
     padding: 0.45rem 0.75rem;
     margin: 0.5rem 0;
   }
-  .schema-chip-icon { color: #4ade80; font-size: 0.8rem; flex-shrink: 0; }
-  .schema-chip-name { font-size: 0.82rem; font-weight: 600; color: #ccc; }
-  .schema-chip-meta { font-size: 0.72rem; color: #555; margin-left: auto; font-family: "IBM Plex Mono", monospace; }
+  .schema-chip-icon { color: #16a34a; font-size: 0.8rem; flex-shrink: 0; }
+  .schema-chip-name { font-size: 0.82rem; font-weight: 600; color: #0e0d0b; }
+  .schema-chip-meta { font-size: 0.72rem; color: #6b6860; margin-left: auto; font-family: "IBM Plex Mono", monospace; }
 
   /* Chat input row */
   .chat-input-row {
@@ -775,13 +779,13 @@
   }
   .chat-input {
     flex: 1;
-    background: #0d0d0d;
-    border: 1px solid #222;
-    border-radius: 6px;
+    background: #f9f8f5;
+    border: 1px solid #dddbd5;
+    border-radius: 8px;
     padding: 0.45rem 0.65rem;
-    color: #ccc;
+    color: #0e0d0b;
     font-size: 0.78rem;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-family: 'DM Sans', sans-serif;
     line-height: 1.5;
     resize: none;
     outline: none;
@@ -789,23 +793,23 @@
     box-sizing: border-box;
   }
   .chat-input:focus { border-color: #22d3ee; }
-  .chat-input::placeholder { color: #3a3a3a; }
+  .chat-input::placeholder { color: #9b9892; }
   .chat-input:disabled { opacity: 0.5; }
 
   .chat-send-btn {
     all: unset;
     cursor: pointer;
-    background: #22d3ee;
-    color: #000;
+    background: #0e7490;
+    color: #fff;
     font-size: 0.78rem;
     font-weight: 600;
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 0.5rem 1rem;
     white-space: nowrap;
     transition: background 0.15s, opacity 0.15s;
     flex-shrink: 0;
   }
-  .chat-send-btn:hover { background: #06b6d4; }
+  .chat-send-btn:hover { background: #0c6078; }
   .chat-send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
   /* Advanced toggle */
@@ -816,19 +820,19 @@
     align-items: center;
     gap: 0.45rem;
     font-size: 0.7rem;
-    color: #555;
+    color: #9b9892;
     margin-top: 0.85rem;
     padding: 0.3rem 0;
-    border-top: 1px solid #1a1a1a;
+    border-top: 1px solid #ece9e3;
     width: 100%;
     box-sizing: border-box;
     transition: color 0.12s;
   }
-  .advanced-toggle:hover { color: #aaa; }
-  .advanced-arrow { font-size: 0.55rem; color: #444; }
+  .advanced-toggle:hover { color: #0e0d0b; }
+  .advanced-arrow { font-size: 0.55rem; color: #9b9892; }
   .advanced-hint {
     font-size: 0.65rem;
-    color: #444;
+    color: #9b9892;
     margin-left: auto;
     font-style: italic;
   }
