@@ -346,7 +346,6 @@
     min-height: 0;
     overflow-y: auto;
     overflow-x: auto;
-    padding-bottom: 1.5rem;
   }
 
   /* Meta bar */

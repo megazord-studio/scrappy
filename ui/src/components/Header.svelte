@@ -1,6 +1,7 @@
 <script lang="ts">
   import { jobsStore } from '../stores/jobs.svelte';
   import BotIcon from './BotIcon.svelte';
+  import { getJobLabel } from '../lib/format';
 
   const {
     screen,
@@ -13,13 +14,7 @@
   } = $props();
 
   const runningJob = $derived(jobsStore.jobs.find(j => j.status === 'running'));
-  const runningLabel = $derived(
-    runningJob
-      ? runningJob.type === 'index'
-        ? (runningJob.params.topic ?? 'index')
-        : `update: ${runningJob.params.input ?? ''}`
-      : null
-  );
+  const runningLabel = $derived(runningJob ? getJobLabel(runningJob) : null);
 </script>
 
 <div class="app-header">

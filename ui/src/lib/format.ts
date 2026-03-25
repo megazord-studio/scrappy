@@ -19,3 +19,8 @@ export function shortUrl(url: string): string {
   }
 }
 
+export function getJobLabel(job: { type: string; params: { topic?: string; schema?: string; input?: string; [key: string]: unknown } }): string {
+  return job.type === 'index'
+    ? (job.params.topic ?? job.params.schema ?? 'index')
+    : `update: ${job.params.input ?? ''}`;
+}

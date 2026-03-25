@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Job } from '../lib/types';
-  import { timeAgo } from '../lib/format';
+  import { timeAgo, getJobLabel } from '../lib/format';
 
   const {
     job,
@@ -14,9 +14,7 @@
     onCancel: () => void;
   } = $props();
 
-  const title = $derived(
-    job.type === 'index' ? (job.params.topic ?? '') : `update: ${job.params.input ?? ''}`
-  );
+  const title = $derived(getJobLabel(job));
 
   const metaParts = $derived([
     job.type,

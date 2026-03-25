@@ -4,7 +4,7 @@
   import StatsBar from './StatsBar.svelte';
   import DashPanel from './DashPanel.svelte';
   import RawLog from './RawLog.svelte';
-  import { shortUrl, fmtK, timeAgo } from '../lib/format';
+  import { shortUrl, fmtK, timeAgo, getJobLabel } from '../lib/format';
   import { cancelJob } from '../lib/api';
   import ChatPanel from './ChatPanel.svelte';
 
@@ -32,7 +32,7 @@
   }
 
   function jobLabel(j: typeof recentJobs[0]) {
-    return j.type === 'index' ? (j.params.topic ?? j.params.schema ?? 'index') : `update: ${j.params.input ?? ''}`;
+    return getJobLabel(j);
   }
 </script>
 

@@ -1,4 +1,4 @@
-import type { ScrapeResult } from "../types.js";
+import type { ScrapeResult, PageLink } from "../types.js";
 
 const LINK_REGEX = /\[.*?\]\((https?:\/\/[^\s)]+)\)/g;
 // matches an HTML tag containing href, capturing href value and all remaining attributes
@@ -56,7 +56,7 @@ export async function scrapeUrl(
   }
 
   // extract markdown-formatted links
-  const linkMap = new Map<string, string>(); // url → text
+  const linkMap = new Map<string, string>(); // url → text (assembled into PageLink[] at return)
   let match: RegExpExecArray | null;
   LINK_REGEX.lastIndex = 0;
   while ((match = LINK_REGEX.exec(markdown)) !== null) {
@@ -81,5 +81,5 @@ export async function scrapeUrl(
     } catch { /* ignore unparseable */ }
   }
 
-  return { url, markdown, links: [...linkMap.entries()].map(([u, t]) => ({ url: u, text: t })) };
+  return { url, markdown, links: [...linkMap.entries()].map(([u, t]): PageLink => ({ url: u, text: t })) };
 }

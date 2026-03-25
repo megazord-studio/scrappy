@@ -1,5 +1,6 @@
 import Database from "better-sqlite3";
 import type { CsvRow, SchemaDefinition } from "../types.js";
+import { normalizeUrlForDedup } from "../lib/url.js";
 
 // ─── Schema init ────────────────────────────────────────────────────────────
 
@@ -37,17 +38,9 @@ function makeKey(record: CsvRow, dedupeKey: string[]): string {
   return dedupeKey.map((k) => normalizeField(k, String(record[k] ?? ""))).join("|");
 }
 
-function normalizeUrl(raw: string): string {
-  return raw.trim().toLowerCase()
-    .replace(/^https?:\/\//, "")
-    .replace(/^www\./, "")
-    .replace(/\/(de|fr|en|it|rm)\//, "/")
-    .replace(/\/$/, "");
-}
-
 function makeUrlRateKey(record: CsvRow, schemaDef: SchemaDefinition): string | null {
   const bank = normalizeField("bankName", String(record["bankName"] ?? ""));
-  const url = normalizeUrl(String(record[schemaDef.urlField] ?? ""));
+  const url = normalizeUrlForDedup(String(record[schemaDef.urlField] ?? ""));
   if (!bank || !url) return null;
   const rates = schemaDef.rateFields.map((f) => String(record[f] ?? "").trim().toLowerCase()).join("|");
   return `${bank}|${url}|${rates}`;
@@ -321,7 +314,7 @@ export function deduplicateDataset(
       .map(([, v]) => (v ?? "").toLowerCase())
       .join("|");
     const urlKey = parsed["url"] && parsed["bankName"]
-      ? `${normName(parsed["bankName"])}|${normalizeUrl(parsed["url"])}`
+      ? `${normName(parsed["bankName"])}|${normalizeUrlForDedup(parsed["url"])}`
       : null;
 
     const dupKey = urlKey ?? key;

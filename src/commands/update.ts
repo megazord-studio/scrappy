@@ -7,6 +7,15 @@ import type { LLMClient } from "../agent/llm-client.js";
 import { createRequire } from "module";
 import https from "https";
 import { isComparisonUrl } from "../lib/domains.js";
+import type { PageLink } from "../types.js";
+import {
+  splitIdentifier,
+  normalizeForMatch,
+  buildSchemaKeywordRe,
+  buildFieldValueRe,
+  detailPageRe,
+  rateLinkScore,
+} from "../lib/link-score.js";
 const _require = createRequire(import.meta.url);
 const pdfParse = _require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
 
@@ -79,8 +88,6 @@ export async function runUpdate(
   let updates = 0;
   let failed = 0;
 
-  interface PageLink { url: string; text: string; }
-
   function extractLinks(markdown: string): PageLink[] {
     const seen = new Set<string>();
     const links: PageLink[] = [];
@@ -92,87 +99,8 @@ export async function runUpdate(
     return links;
   }
 
-  // Split camelCase/snake_case into individual words
-  function splitIdentifier(s: string): string[] {
-    return s.replace(/([A-Z])/g, " $1").toLowerCase().split(/[\s_-]+/).filter(Boolean);
-  }
-
-  // Normalize a path or anchor text for keyword matching.
-  // German URLs expand umlauts (ä→ae, ö→oe, ü→ue) so "zinssaetze" in a URL won't
-  // match the schema keyword "zinssatz" without this step. We also collapse the
-  // digraphs so both the URL form and the plain-text form reduce to the same string.
-  function normalizeForMatch(s: string): string {
-    return s.toLowerCase()
-      .replace(/ä/g, "a").replace(/ö/g, "o").replace(/ü/g, "u").replace(/ß/g, "ss")
-      .replace(/ae/g, "a").replace(/oe/g, "o").replace(/ue/g, "u");
-  }
-
-  // Build a keyword regex from the schema: rateFields, field names, dedupeKey, field descriptions
-  function buildSchemaKeywordRe(): RegExp | null {
-    const STOP = new Set(["name", "value", "field", "data", "info", "page", "item", "list",
-      "type", "date", "time", "text", "link", "from", "with", "that", "this", "have",
-      "will", "been", "they", "their", "url", "the", "and", "for", "per"]);
-    const words = new Set<string>();
-
-    // rateFields are the strongest hint — they're literally what we're looking for
-    for (const f of schemaDef.rateFields) {
-      splitIdentifier(f).forEach(w => { if (w.length >= 3 && !STOP.has(w)) words.add(normalizeForMatch(w)); });
-    }
-    // field names and dedupe keys
-    for (const f of [...Object.keys(schemaDef.fieldDescriptions), ...schemaDef.dedupeKey]) {
-      splitIdentifier(f).forEach(w => { if (w.length >= 4 && !STOP.has(w)) words.add(normalizeForMatch(w)); });
-    }
-    // meaningful words from field descriptions
-    for (const desc of Object.values(schemaDef.fieldDescriptions)) {
-      desc.split(/\W+/).forEach(w => { if (w.length >= 5 && !STOP.has(w.toLowerCase())) words.add(normalizeForMatch(w)); });
-    }
-
-    return words.size > 0 ? new RegExp([...words].join("|"), "i") : null;
-  }
-
-  const schemaKeywordRe = buildSchemaKeywordRe();
-
-  // Regex built from rateFields only — these are the strongest path signal because
-  // they name the exact data we're looking for (e.g. "zinssatz" → zinssaetze.html,
-  // "preis" → preise.html). Scored separately so they outrank generic field keywords
-  // like "konto" or "bank" that appear in every product URL on a bank's site.
-  const fieldValueRe = (() => {
-    const words = new Set<string>();
-    for (const f of schemaDef.rateFields) {
-      splitIdentifier(f).forEach(w => { if (w.length >= 3) words.add(normalizeForMatch(w)); });
-    }
-    return words.size > 0 ? new RegExp([...words].join("|"), "i") : null;
-  })();
-
-  // Generic detail/pricing/specs page URL patterns — covers product detail pages across
-  // all domains and languages (e.g. "konditionen", "tarife", "specs", "pricing").
-  // Scored between fieldValueRe (+4) and schemaKeywordRe (+2).
-  const detailPageRe = /detail|spec|pricing|price|feature|kondition|tarif|preise?|taux|prix|prezzi|rates?|fees?|kosten|gebuhr|offert|produkt|product|plan/i;
-
-  // Score a link by how likely it leads to relevant data.
-  // URL path keywords are a strong signal; anchor text alone is weak (navigation menus
-  // often contain field-relevant terms but link to generic landing pages).
-  function rateLinkScore(link: PageLink): number {
-    let score = 0;
-    let hasPathSignal = false;
-    try {
-      const path = normalizeForMatch(new URL(link.url).pathname);
-      if (path.endsWith(".pdf")) { score += 3; hasPathSignal = true; }
-      // fieldValue keywords in the path are the strongest signal (+4)
-      if (fieldValueRe?.test(path)) { score += 4; hasPathSignal = true; }
-      // generic detail/pricing page patterns are next (+3)
-      else if (detailPageRe.test(path)) { score += 3; hasPathSignal = true; }
-      // general schema keywords are weakest (+2)
-      else if (schemaKeywordRe?.test(path)) { score += 2; hasPathSignal = true; }
-    } catch { /* skip */ }
-    const text = normalizeForMatch(link.text);
-    if (fieldValueRe?.test(text)) score += 3;
-    else if (schemaKeywordRe?.test(text)) score += 2;
-    if (/pdf|document|download|dokument/i.test(text)) score += 1;
-    // Anchor-text-only links are weaker (nav menus often have relevant terms
-    // but link to generic landing pages). Still allow them at a lower effective score.
-    return hasPathSignal ? score : Math.floor(score / 2);
-  }
+  const schemaKeywordRe = buildSchemaKeywordRe(schemaDef);
+  const fieldValueRe = buildFieldValueRe(schemaDef);
 
   async function fetchPdf(url: string, referer?: string): Promise<string> {
     const headers: Record<string, string> = {
@@ -348,7 +276,7 @@ ${markdown}`,
       // strip fragment from current url for comparison (anchor-only links add no new content)
       const currentBase = (() => { try { const u = new URL(url); u.hash = ""; return u.href; } catch { return url; } })();
       const candidates = links
-        .map(l => ({ link: l, score: rateLinkScore(l) }))
+        .map(l => ({ link: l, score: rateLinkScore(l, fieldValueRe, schemaKeywordRe) }))
         .filter(({ score, link }) => {
           if (score <= 0) return false;
           // skip links that are just fragments of the current page (same content, different scroll pos)
@@ -409,7 +337,7 @@ ${markdown}`,
               // score and prefer PDFs whose link text suggests rate content (e.g. "Die Zinssätze")
               const deepPdfs = pageLinks
                 .filter(l => l.url.toLowerCase().endsWith(".pdf") && !triedUrls.has(l.url))
-                .sort((a, b) => rateLinkScore(b) - rateLinkScore(a))
+                .sort((a, b) => rateLinkScore(b, fieldValueRe, schemaKeywordRe) - rateLinkScore(a, fieldValueRe, schemaKeywordRe))
                 .slice(0, deepSearch ? 10 : 5);
               for (const pdf of deepPdfs) {
                 triedUrls.add(pdf.url);

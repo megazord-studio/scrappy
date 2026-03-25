@@ -23,10 +23,15 @@ export interface RunConfig {
   seedUrls?: string[];
 }
 
+export interface PageLink {
+  url: string;
+  text: string;
+}
+
 export interface ScrapeResult {
   url: string;
   markdown: string;
-  links: Array<{ url: string; text: string }>;
+  links: PageLink[];
 }
 
 export type ExtractedRecord = Record<string, unknown>;
