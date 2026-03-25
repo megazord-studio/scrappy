@@ -245,15 +245,16 @@ export async function runAgent(
     // Process tool calls
     const toolBlocks = response.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
 
-    // Handle finish synchronously before dispatching parallel work
+    // Evaluate finish — may be rejected if coverage is insufficient.
+    // Do NOT short-circuit here: if the agent called finish alongside other tools,
+    // all tool calls must still receive a result (OpenAI-compatible APIs require it).
     const finishBlock = toolBlocks.find((b) => b.name === "finish");
+    let finishRejectionMsg: string | null = null;
     if (finishBlock) {
       const finishInput = finishBlock.input as ToolInput;
       const estimatedTotal = typeof finishInput.estimated_total === "number" ? finishInput.estimated_total : null;
       const tooFewRecords = allRecords.length < 5 && visitedUrls.size >= 5;
-      // Reject if agent found significantly fewer than its own estimate
       const belowEstimate = estimatedTotal !== null && allRecords.length < estimatedTotal * 0.7;
-      // Check if there are providers only seen on comparison sites with no official record yet
       const officialProviders = new Set(
         allRecords.filter(r => r._dataSource === "official").map(r => String(r[config.schemaDef.dedupeKey[1] ?? ""] ?? "").toLowerCase())
       );
@@ -271,22 +272,8 @@ export async function runAgent(
           ? `you estimated ${estimatedTotal} total results but only found ${allRecords.length} — keep searching and scraping to reach your estimate`
           : `these providers only have comparison data, no official pages scraped yet: ${uniqueComparisonOnly.join(", ")}`;
         log("log", { message: `Finish rejected (${reason}). Continuing…` });
-        messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: finishBlock.id, content: `Not done yet — ${reason}.` }] });
-        continue;
+        finishRejectionMsg = `Not done yet — ${reason}.`;
       }
-      const input = finishBlock.input as ToolInput;
-      const finalRecords = (input.records ?? []) as ExtractedRecord[];
-      const seen = new Set(allRecords.map((r) => JSON.stringify(r)));
-      for (const r of finalRecords) {
-        if (!seen.has(JSON.stringify(r))) {
-          allRecords.push(r);
-          seen.add(JSON.stringify(r));
-        }
-      }
-      if (onRecords && finalRecords.length > 0) await onRecords(finalRecords);
-      log("finish", { total: allRecords.length });
-      messages.push({ role: "user", content: [{ type: "tool_result", tool_use_id: finishBlock.id, content: "Done." }] });
-      return allRecords;
     }
 
     // Mark new scrape URLs as visited upfront to prevent duplicate concurrent scrapes.
@@ -302,7 +289,7 @@ export async function runAgent(
       }
     }
 
-    // Dispatch all tool calls concurrently
+    // Dispatch all tool calls concurrently (finish is handled inline below)
     const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
       toolBlocks.map(async (block) => {
         const toolName = block.name as ToolName;
@@ -356,6 +343,9 @@ export async function runAgent(
             } else {
               resultContent = JSON.stringify({ saved: records.length, total_so_far: allRecords.length });
             }
+          } else if (toolName === "finish") {
+            // Return rejection or acceptance result inline so all tool_use_ids get a response
+            resultContent = finishRejectionMsg ?? "Done.";
           }
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -372,6 +362,21 @@ export async function runAgent(
     );
 
     messages.push({ role: "user", content: toolResults });
+
+    // If finish was accepted (no rejection), wrap up
+    if (finishBlock && !finishRejectionMsg) {
+      const finalRecords = (finishBlock.input as ToolInput).records ?? [] as ExtractedRecord[];
+      const seen = new Set(allRecords.map((r) => JSON.stringify(r)));
+      for (const r of finalRecords as ExtractedRecord[]) {
+        if (!seen.has(JSON.stringify(r))) {
+          allRecords.push(r);
+          seen.add(JSON.stringify(r));
+        }
+      }
+      if (onRecords && (finalRecords as ExtractedRecord[]).length > 0) await onRecords(finalRecords as ExtractedRecord[]);
+      log("finish", { total: allRecords.length });
+      return allRecords;
+    }
 
     // Sliding window: keep initial prompt + last CONTEXT_WINDOW iteration pairs
     trimMessages(messages);
