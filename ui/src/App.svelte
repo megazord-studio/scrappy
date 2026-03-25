@@ -67,17 +67,19 @@
   onOpenSettings={() => { settingsOpen = true; }}
 />
 
-{#if screen === 'monitor'}
-  <MonitorScreen />
-{:else if screen === 'datasets'}
-  <DatasetsScreen
-    {outputs}
-    {schemas}
-    onSchemaEdit={(id) => { editingSchemaId = id; schemaModalOpen = true; }}
-    onNewSchema={() => { editingSchemaId = null; schemaModalOpen = true; }}
-    onSelectsReload={loadSelects}
-  />
-{/if}
+<main class="app-content">
+  {#if screen === 'monitor'}
+    <MonitorScreen />
+  {:else if screen === 'datasets'}
+    <DatasetsScreen
+      {outputs}
+      {schemas}
+      onSchemaEdit={(id) => { editingSchemaId = id; schemaModalOpen = true; }}
+      onNewSchema={() => { editingSchemaId = null; schemaModalOpen = true; }}
+      onSelectsReload={loadSelects}
+    />
+  {/if}
+</main>
 
 <SettingsModal open={settingsOpen} onClose={() => { settingsOpen = false; }} />
 <SchemaModal

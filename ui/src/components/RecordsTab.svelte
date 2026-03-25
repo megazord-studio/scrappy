@@ -243,6 +243,7 @@
 {:else if !file || headers.length === 0}
   <div class="dash-empty" style="height:200px">No records yet</div>
 {:else}
+  <div class="records-root">
   <div class="records-meta">
     <span class="records-meta-count">{rowCount}<span class="records-meta-label"> records</span></span>
     <span class="records-meta-file">{file}</span>
@@ -328,9 +329,25 @@
       </tbody>
     </table>
   </div>
+  </div>
 {/if}
 
 <style>
+  .records-root {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .records-scroll {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: auto;
+  }
+
   /* Meta bar */
   .records-meta {
     display: flex;

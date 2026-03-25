@@ -1,19 +1,28 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body { height: 100%; }
 body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   background: #f5f3ee;
   color: #0e0d0b;
-  min-height: 100vh;
-  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .app-header {
   display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 1.5rem; max-width: 1400px;
+  flex-shrink: 0;
+  padding: 0.9rem 1.5rem;
   background: #f5f3ee;
-  padding-bottom: 1rem;
   border-bottom: 1px solid #dddbd5;
+}
+
+.app-content {
+  flex: 1;
+  min-height: 0;
+  padding: 1.5rem;
+  overflow-y: auto;
 }
 .app-header h1 { font-size: 1.2rem; font-weight: 700; color: #0e0d0b; letter-spacing: -0.02em; }
 .gear-btn {

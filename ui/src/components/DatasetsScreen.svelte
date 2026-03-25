@@ -322,13 +322,19 @@
   /* Root */
   .ds-root {
     font-family: 'DM Sans', sans-serif;
+    height: 100%;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
 
   .ds-layout {
     display: flex;
     gap: 1.5rem;
-    min-height: calc(100vh - 120px); /* account for header + body padding */
-    align-items: flex-start;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
   }
 
   /* New Dataset button */
@@ -362,6 +368,7 @@
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
+    overflow-y: auto;
   }
 
   .ds-sidebar-sec-header {
@@ -527,9 +534,11 @@
   .ds-main {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
     gap: 0;
+    overflow: hidden;
   }
 
   .ds-empty {
@@ -677,14 +686,19 @@
   .ds-content-row {
     display: flex;
     gap: 0.75rem;
-    align-items: flex-start;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    align-items: stretch;
   }
 
   .ds-records-col {
     flex: 1;
     min-width: 0;
+    min-height: 0;
     display: flex;
     flex-direction: column;
+    overflow: hidden;
   }
 
   .ds-chat-col {
@@ -712,6 +726,10 @@
     border: 1px solid #dddbd5;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
     margin-top: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Chat */
