@@ -30,7 +30,7 @@
   let editDisplayName = $state('');
   let editUrlField = $state('');
   let editDedupeKey = $state('');
-  let editRateFields = $state('');
+  let editTrackedFields = $state('');
   let editEntityField = $state('');
   let editNamingRules = $state('');
   let editFields = $state<EditField[]>([]);
@@ -99,7 +99,7 @@
     editDisplayName = row.display_name;
     editUrlField = row.url_field ?? 'url';
     editDedupeKey = (() => { try { return (JSON.parse(row.dedupe_key as unknown as string) as string[]).join(', '); } catch { return row.dedupe_key ?? ''; } })();
-    editRateFields = (() => { try { return (JSON.parse(row.rate_fields as unknown as string) as string[]).join(', '); } catch { return ''; } })();
+    editTrackedFields = (() => { try { return (JSON.parse(row.tracked_fields as unknown as string) as string[]).join(', '); } catch { return ''; } })();
     editEntityField = row.entity_field ?? '';
     editNamingRules = (() => { try { const arr = JSON.parse(row.naming_rules as unknown as string) as string[]; return arr.join('\n'); } catch { return ''; } })();
     editFields = parsedFields.map(f => ({ name: f.name, optional: !!f.optional, description: f.description ?? '' }));
@@ -126,7 +126,7 @@
       return;
     }
     const dk = editDedupeKey.split(',').map(s => s.trim()).filter(Boolean);
-    const rf = editRateFields.split(',').map(s => s.trim()).filter(Boolean);
+    const rf = editTrackedFields.split(',').map(s => s.trim()).filter(Boolean);
     const nr = editNamingRules.trim() ? editNamingRules.split('\n').map(s => s.trim()).filter(Boolean) : [];
     const ef = editEntityField.trim() || undefined;
     saving = true;
@@ -139,7 +139,7 @@
         dedupe_key: dk,
         url_field: editUrlField.trim(),
         entity_field: ef,
-        rate_fields: rf,
+        tracked_fields: rf,
         naming_rules: nr,
       }, selected.id) as { error?: string; ok?: boolean };
       if (res.ok === false) {
@@ -379,7 +379,7 @@
                 </div>
                 <div class="adv-field">
                   <label class="adv-label">Tracked Fields <span class="adv-hint">monitored for changes</span></label>
-                  <input class="adv-input" type="text" bind:value={editRateFields} placeholder="zins, ter" />
+                  <input class="adv-input" type="text" bind:value={editTrackedFields} placeholder="zins, ter" />
                 </div>
               </div>
               <div class="adv-row" style="margin-top: 0.75rem">

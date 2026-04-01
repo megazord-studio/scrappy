@@ -123,8 +123,8 @@ export async function markNotDuplicate(file: string, ids: number[]): Promise<voi
   });
 }
 
-export async function dedupeOutput(file: string): Promise<void> {
-  await apiFetch(`/outputs/${file}/dedupe`, { method: 'POST' });
+export async function dedupeOutput(file: string): Promise<{ before: number; after: number; removed: number }> {
+  return apiFetch(`/outputs/${file}/dedupe`, { method: 'POST' });
 }
 
 export async function deleteRecords(file: string, ids: number[]): Promise<void> {
@@ -231,7 +231,7 @@ export async function generateSchema(description: string): Promise<{
     fields: Array<{ name: string; optional: boolean; description: string }>;
     url_field: string;
     dedupe_key: string[];
-    rate_fields: string[];
+    tracked_fields: string[];
     naming_rules: string[];
   };
   error?: string;

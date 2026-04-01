@@ -88,7 +88,7 @@ export interface Schema {
   dedupe_key: string;
   url_field: string;
   /** JSON-encoded string[] */
-  rate_fields: string;
+  tracked_fields: string;
   /** JSON-encoded string[] */
   naming_rules?: string;
   entity_field?: string;

@@ -101,8 +101,8 @@ function buildQaPrompt(schemaDef: SchemaDefinition): string {
   const fieldLines = Object.entries(schemaDef.fieldDescriptions)
     .map(([k, v]) => `  ${k}: ${v}`)
     .join("\n");
-  const rateFields = schemaDef.rateFields.length
-    ? schemaDef.rateFields.join(", ")
+  const trackedFields = schemaDef.trackedFields.length
+    ? schemaDef.trackedFields.join(", ")
     : "(none)";
   const nameFields = schemaDef.dedupeKey.join(", ");
   const namingRules = schemaDef.namingRules?.length
@@ -116,7 +116,7 @@ ${fieldLines}
 
 ## Field categories
 - Name/entity fields (check for inconsistent casing, spelling variants, abbreviations): ${nameFields}
-- Rate/numeric fields (check for wrong units, impossible values, format inconsistencies): ${rateFields}
+- Tracked fields (check for wrong units, impossible values, format inconsistencies): ${trackedFields}
 
 ## Naming rules
 ${namingRules}

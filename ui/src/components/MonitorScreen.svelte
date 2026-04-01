@@ -6,7 +6,6 @@
   import RawLog from './RawLog.svelte';
   import { shortUrl, fmtK, timeAgo, getJobLabel } from '../lib/format';
   import { cancelJob } from '../lib/api';
-  import ChatPanel from './ChatPanel.svelte';
 
   const s = $derived(dashStore.state);
   const activeScrapesList = $derived([...s.activeScrapes.values()]);
@@ -33,6 +32,8 @@
 
 
 </script>
+
+<div class="monitor-scroll">
 
 <!-- Job selector bar -->
 <div class="job-selector">
@@ -72,10 +73,6 @@
 <div class="action-ticker" class:idle={dashStore.state.job?.status !== 'running'}>
   <span class="ticker-dot" class:active={dashStore.state.job?.status === 'running'}></span>
   <span class="ticker-text">{dashStore.currentAction}<span class="ticker-cursor" class:active={dashStore.state.job?.status === 'running'}>▋</span></span>
-</div>
-
-<div style="margin-bottom:0.75rem">
-  <ChatPanel jobId={dashStore.state.job?.id} />
 </div>
 
 <div class="monitor-grid">
@@ -205,7 +202,7 @@
           <span style="color:#dc2626;font-size:0.7rem;word-break:break-all;overflow-wrap:anywhere">
             {err.tool ? `[${err.tool}] ` : ''}{err.message}
           </span>
-          <span style="color:#9b9892;font-size:0.62rem">{err.ts}</span>
+          <span style="color:var(--on-surface-muted);font-size:0.62rem">{err.ts}</span>
         </div>
       {/each}
     {/if}
@@ -217,6 +214,8 @@
   <RawLog entries={s.rawLog} />
 </div>
 
+</div> <!-- /monitor-scroll -->
+
 <style>
   .action-ticker {
     display: flex;
@@ -224,19 +223,19 @@
     gap: 0.6rem;
     padding: 0.5rem 0.85rem;
     margin-bottom: 0.75rem;
-    background: #f0fdf4;
-    border: 1px solid #bbf7d0;
+    background: var(--surface-container-low);
+    border: 1px solid rgba(22, 163, 74, 0.3);
     border-radius: 4px;
     font-family: "IBM Plex Mono", "Fira Code", monospace;
     font-size: 0.8rem;
-    color: #15803d;
+    color: #16a34a;
     min-width: 0;
     transition: color 0.3s, border-color 0.3s, background 0.3s;
   }
   .action-ticker.idle {
-    color: #9b9892;
-    border-color: #e8e6e0;
-    background: #fafaf9;
+    color: var(--on-surface-muted);
+    border-color: var(--c-border-light);
+    background: var(--surface-container-lowest);
   }
   .ticker-dot {
     width: 5px;
@@ -282,8 +281,8 @@
     gap: 0.75rem;
     padding: 0.5rem 0.75rem;
     margin-bottom: 0.75rem;
-    background: #fff;
-    border: 1px solid #e8e6e0;
+    background: var(--surface-container-low);
+    border: 1px solid var(--c-border-light);
     border-radius: 4px;
     min-width: 0;
   }
@@ -293,13 +292,13 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.12em;
-    color: #9b9892;
+    color: var(--on-surface-muted);
     flex-shrink: 0;
   }
   .job-selector-empty {
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.72rem;
-    color: #9b9892;
+    color: var(--on-surface-muted);
   }
   .job-chips {
     display: flex;
@@ -326,21 +325,21 @@
     gap: 0.35rem;
     padding: 0.22rem 0.5rem;
     border-radius: 3px;
-    border: 1px solid #e8e6e0;
-    background: #f5f3ee;
+    border: 1px solid var(--c-border-light);
+    background: var(--surface-container);
     white-space: nowrap;
     flex-shrink: 0;
     transition: border-color 0.15s, background 0.15s;
     font-family: "IBM Plex Mono", monospace;
   }
-  .job-chip:hover { border-color: #d0cec8; background: #eceae4; }
+  .job-chip:hover { border-color: var(--c-border); background: var(--surface-container-high); }
   .job-chip.selected {
     border-color: #22d3ee;
-    background: #ecfeff;
+    background: var(--surface-container-highest);
   }
   .job-chip.selected.running {
     border-color: #16a34a;
-    background: #f0fdf4;
+    background: var(--surface-container-highest);
   }
 
   .job-chip-dot {
@@ -356,26 +355,26 @@
 
   .job-chip-label {
     font-size: 0.75rem;
-    color: #6b6860;
+    color: var(--on-surface-muted);
     max-width: 160px;
     overflow: hidden;
     text-overflow: ellipsis;
     transition: color 0.15s;
   }
-  .job-chip.selected .job-chip-label { color: #0e0d0b; }
-  .job-chip:hover .job-chip-label { color: #0e0d0b; }
+  .job-chip.selected .job-chip-label { color: var(--on-surface); }
+  .job-chip:hover .job-chip-label { color: var(--on-surface); }
 
   .job-chip-age {
     font-size: 0.67rem;
-    color: #9b9892;
+    color: var(--on-surface-muted);
     flex-shrink: 0;
   }
-  .job-chip.selected .job-chip-age { color: #6b6860; }
+  .job-chip.selected .job-chip-age { color: var(--on-surface-muted); }
 
   .job-chip-cancel {
     all: unset;
     cursor: pointer;
-    color: #9b9892;
+    color: var(--on-surface-muted);
     font-size: 0.8rem;
     line-height: 1;
     flex-shrink: 0;
@@ -387,7 +386,7 @@
   .job-chip-more {
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.67rem;
-    color: #9b9892;
+    color: var(--on-surface-muted);
     flex-shrink: 0;
     padding: 0 0.2rem;
   }
@@ -397,7 +396,7 @@
     cursor: pointer;
     font-family: "IBM Plex Mono", monospace;
     font-size: 0.67rem;
-    color: #9b9892;
+    color: var(--on-surface-muted);
     flex-shrink: 0;
     transition: color 0.15s;
     margin-left: auto;

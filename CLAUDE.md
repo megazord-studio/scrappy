@@ -58,7 +58,7 @@ A schema (`SchemaDefinition` in `src/types.ts`) is the central config object pas
 - `fieldDescriptions` — passed verbatim into the LLM extraction prompt
 - `dedupeKey` — fields used for deduplication
 - `urlField` — which field holds the URL to scrape during updates
-- `rateFields` — fields monitored for changes during updates
+- `trackedFields` — fields monitored for changes during updates
 - `namingRules` — optional LLM instructions for normalization
 
 Schemas can be TypeScript files in `schemas/` or created via the UI and stored in the `schemas` SQLite table.

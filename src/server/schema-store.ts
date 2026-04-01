@@ -15,7 +15,7 @@ export interface SchemaInput {
   fields: FieldDef[];
   dedupe_key: string[];
   url_field: string;
-  rate_fields: string[];
+  tracked_fields: string[];
   naming_rules?: string[];
   entity_field?: string;
 }
@@ -26,7 +26,7 @@ interface DbSchemaRow {
   fields: string;
   dedupe_key: string;
   url_field: string;
-  rate_fields: string;
+  tracked_fields: string;
   naming_rules: string | null;
   entity_field: string | null;
   created_at: string;
@@ -46,7 +46,7 @@ function rowToDefinition(row: DbSchemaRow): SchemaDefinition {
     fieldDescriptions,
     dedupeKey: JSON.parse(row.dedupe_key),
     urlField: row.url_field,
-    rateFields: JSON.parse(row.rate_fields),
+    trackedFields: JSON.parse(row.tracked_fields),
     namingRules: row.naming_rules ? JSON.parse(row.naming_rules) : undefined,
     entityField: row.entity_field ?? undefined,
   };
@@ -73,7 +73,7 @@ export function dbGetSchema(db: Database.Database, id: string): SchemaDefinition
 export function dbInsertSchema(db: Database.Database, input: SchemaInput): void {
   const now = new Date().toISOString();
   db.prepare(
-    `INSERT INTO schemas (id, display_name, fields, dedupe_key, url_field, rate_fields, naming_rules, entity_field, created_at, updated_at)
+    `INSERT INTO schemas (id, display_name, fields, dedupe_key, url_field, tracked_fields, naming_rules, entity_field, created_at, updated_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   ).run(
     normalizeId(input.id),
@@ -81,7 +81,7 @@ export function dbInsertSchema(db: Database.Database, input: SchemaInput): void 
     JSON.stringify(input.fields),
     JSON.stringify(input.dedupe_key),
     input.url_field,
-    JSON.stringify(input.rate_fields),
+    JSON.stringify(input.tracked_fields),
     input.naming_rules ? JSON.stringify(input.naming_rules) : null,
     input.entity_field ?? null,
     now,
@@ -92,13 +92,13 @@ export function dbInsertSchema(db: Database.Database, input: SchemaInput): void 
 export function dbUpdateSchema(db: Database.Database, id: string, input: Omit<SchemaInput, "id">): void {
   const nid = normalizeId(id);
   db.prepare(
-    `UPDATE schemas SET display_name=?, fields=?, dedupe_key=?, url_field=?, rate_fields=?, naming_rules=?, entity_field=?, updated_at=? WHERE id=?`
+    `UPDATE schemas SET display_name=?, fields=?, dedupe_key=?, url_field=?, tracked_fields=?, naming_rules=?, entity_field=?, updated_at=? WHERE id=?`
   ).run(
     input.display_name,
     JSON.stringify(input.fields),
     JSON.stringify(input.dedupe_key),
     input.url_field,
-    JSON.stringify(input.rate_fields),
+    JSON.stringify(input.tracked_fields),
     input.naming_rules ? JSON.stringify(input.naming_rules) : null,
     input.entity_field ?? null,
     new Date().toISOString(),

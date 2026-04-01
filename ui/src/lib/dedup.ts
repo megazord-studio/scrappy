@@ -20,22 +20,22 @@ export function normalizeUrl(raw: unknown): string {
     .replace(/\/$/, '');
 }
 
-export function makeUrlRateKey(row: Record<string, unknown>, rateFields: string[]): string | null {
+export function makeUrlFieldKey(row: Record<string, unknown>, trackedFields: string[]): string | null {
   const bank = normalizeDedupField('bankName', row['bankName'] ?? '');
   const url = normalizeUrl(row['url'] ?? '');
   if (!bank || !url) return null;
-  const rates = rateFields.map(f => String(row[f] ?? '').trim().toLowerCase()).join('|');
-  return `${bank}|${url}|${rates}`;
+  const fieldValues = trackedFields.map(f => String(row[f] ?? '').trim().toLowerCase()).join('|');
+  return `${bank}|${url}|${fieldValues}`;
 }
 
-export function extractRateNums(s: unknown): number[] {
+export function extractNums(s: unknown): number[] {
   return [...String(s ?? '').matchAll(/(\d+[.,]\d+|\d+)/g)]
     .map(m => parseFloat(m[1].replace(',', '.')))
     .filter(n => !isNaN(n));
 }
 
-export function ratesOverlap(a: unknown, b: unknown): boolean {
-  const na = extractRateNums(a), nb = extractRateNums(b);
+export function valuesOverlap(a: unknown, b: unknown): boolean {
+  const na = extractNums(a), nb = extractNums(b);
   return na.length > 0 && nb.length > 0 && na.some(x => nb.some(y => Math.abs(x - y) < 0.01));
 }
 
@@ -56,19 +56,19 @@ export function rowPairScore(
   a: Record<string, unknown>,
   b: Record<string, unknown>,
   keyFields: string[],
-  rateFields: string[]
+  trackedFields: string[]
 ): number {
   const keyA = keyFields.map(f => normalizeDedupField(f, a[f])).join('|');
   const keyB = keyFields.map(f => normalizeDedupField(f, b[f])).join('|');
   if (keyA === keyB) return 1.0;
 
-  const urkA = makeUrlRateKey(a, rateFields);
-  const urkB = makeUrlRateKey(b, rateFields);
+  const urkA = makeUrlFieldKey(a, trackedFields);
+  const urkB = makeUrlFieldKey(b, trackedFields);
   if (urkA && urkA === urkB) return 1.0;
 
   const bankA = normalizeDedupField('bankName', a['bankName'] ?? '');
   const bankB = normalizeDedupField('bankName', b['bankName'] ?? '');
-  const rateMatch = rateFields.some(f => ratesOverlap(a[f], b[f]));
+  const rateMatch = trackedFields.some(f => valuesOverlap(a[f], b[f]));
   if (bankA === bankB && rateMatch) return 0.85;
   if (bankKeywordsOverlap(a['bankName'] ?? '', b['bankName'] ?? '') && rateMatch) return 0.65;
 
@@ -88,7 +88,7 @@ function getNoDedupIds(row: Record<string, unknown>): Set<number> {
 export function buildDupGroups(
   rows: Record<string, unknown>[],
   keyFields: string[],
-  rateFields: string[],
+  trackedFields: string[],
   threshold = 0.5
 ): Map<number, number[]> {
   const parent = rows.map((_, i) => i);
@@ -101,7 +101,7 @@ export function buildDupGroups(
       const idI = Number(rows[i]._id);
       const idJ = Number(rows[j]._id);
       if (getNoDedupIds(rows[i]).has(idJ) || getNoDedupIds(rows[j]).has(idI)) continue;
-      if (rowPairScore(rows[i], rows[j], keyFields, rateFields) >= threshold) {
+      if (rowPairScore(rows[i], rows[j], keyFields, trackedFields) >= threshold) {
         parent[find(i)] = find(j);
       }
     }
@@ -120,11 +120,11 @@ export function groupMaxScore(
   groupIndices: number[],
   rows: Record<string, unknown>[],
   keyFields: string[],
-  rateFields: string[]
+  trackedFields: string[]
 ): number {
   return groupIndices
     .filter(j => j !== origIdx)
-    .reduce((max, j) => Math.max(max, rowPairScore(rows[origIdx], rows[j], keyFields, rateFields)), 0);
+    .reduce((max, j) => Math.max(max, rowPairScore(rows[origIdx], rows[j], keyFields, trackedFields)), 0);
 }
 
 export function dupScaleHtml(score: number): string {

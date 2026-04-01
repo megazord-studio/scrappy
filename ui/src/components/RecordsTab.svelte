@@ -139,9 +139,9 @@
       const systemFields = ['_dataSource', '_lastUpdated', 'url'];
       const keyFields = ['kontoName', 'bankName'].filter(f => headers.includes(f));
       const useKeyFields = keyFields.length ? keyFields : headers.filter(h => !systemFields.includes(h));
-      const rateFields = headers.filter(h => /zins|rate|rendite/i.test(h));
+      const trackedFields = headers.filter(h => /zins|rate|rendite/i.test(h));
 
-      const groups = buildDupGroups(rows as Record<string, unknown>[], useKeyFields, rateFields);
+      const groups = buildDupGroups(rows as Record<string, unknown>[], useKeyFields, trackedFields);
       const dupGroupsList = [...groups.values()].filter(g => g.length > 1);
       const singletons = [...groups.values()].filter(g => g.length === 1).map(g => g[0]);
       const displayOrder = [...dupGroupsList.flat(), ...singletons];
@@ -161,7 +161,7 @@
         const groupIndices = isInGroup ? dupGroupsList[gid] : null;
         const borderColor = isInGroup ? GROUP_BORDER_COLORS[gid % GROUP_BORDER_COLORS.length] : null;
         const rowScore = isInGroup
-          ? groupMaxScore(origIdx, groupIndices!, rows as Record<string, unknown>[], useKeyFields, rateFields)
+          ? groupMaxScore(origIdx, groupIndices!, rows as Record<string, unknown>[], useKeyFields, trackedFields)
           : 0;
         const allGroupIds: number[] = isInGroup
           ? groupIndices!.map(i => Number((rows[i] as Record<string, string>)['_id']))

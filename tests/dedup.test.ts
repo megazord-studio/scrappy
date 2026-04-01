@@ -14,7 +14,7 @@ const schemaDef: SchemaDefinition = {
   fieldDescriptions: { kontoName: "", bankName: "", zinssatz: "", url: "" },
   dedupeKey: ["kontoName", "bankName"],
   urlField: "url",
-  rateFields: ["zinssatz"],
+  trackedFields: ["zinssatz"],
 };
 
 function rec(kontoName: string, bankName: string, zinssatz: string, url = "", dataSource = "comparison"): CsvRow {

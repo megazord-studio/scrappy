@@ -21,6 +21,7 @@
 
   const navItems: { id: Screen; icon: string; label: string }[] = [
     { id: 'discovery',   icon: 'search_insights', label: 'Discovery'   },
+    { id: 'monitor',     icon: 'monitor_heart',   label: 'Monitor'     },
     { id: 'extractions', icon: 'dataset',          label: 'Extractions' },
     { id: 'schemas',     icon: 'schema',           label: 'Schemas'     },
     { id: 'sources',     icon: 'database',         label: 'Sources'     },

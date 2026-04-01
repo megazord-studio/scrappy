@@ -263,7 +263,19 @@ app.post("/outputs/:dataset/dedupe", async (req, reply) => {
   const { dataset } = req.params as { dataset: string };
   const name = validDataset(dataset, reply);
   if (!name) return;
-  return deduplicateDataset(name, db);
+  // Resolve dedupeKey from the schema associated with this dataset
+  const jobRow = db.prepare(
+    "SELECT params FROM jobs WHERE json_extract(params, '$.output') = ? OR json_extract(params, '$.input') = ? ORDER BY started_at DESC LIMIT 1"
+  ).get(name, name) as { params: string } | undefined;
+  let dedupeKey: string[] | undefined;
+  if (jobRow) {
+    const schemaId = (JSON.parse(jobRow.params) as Record<string, string>).schema ?? null;
+    if (schemaId) {
+      const schemaRow = db.prepare("SELECT dedupe_key FROM schemas WHERE id = ?").get(schemaId) as { dedupe_key: string } | undefined;
+      if (schemaRow) dedupeKey = JSON.parse(schemaRow.dedupe_key) as string[];
+    }
+  }
+  return deduplicateDataset(name, db, dedupeKey);
 });
 
 // --- mark rows as not duplicates ---
@@ -589,12 +601,12 @@ app.post("/chat", async (req, reply) => {
 
     const schemaDetails = schemas.map(s => {
       try {
-        const row = db.prepare("SELECT fields, rate_fields, dedupe_key FROM schemas WHERE id = ?").get(s.id) as { fields: string; rate_fields: string; dedupe_key: string } | undefined;
+        const row = db.prepare("SELECT fields, tracked_fields, dedupe_key FROM schemas WHERE id = ?").get(s.id) as { fields: string; tracked_fields: string; dedupe_key: string } | undefined;
         if (!row) return `- ${s.display_name} (id: ${s.id})`;
         const fields = (JSON.parse(row.fields) as { name: string; description: string }[]).map(f => f.name).join(", ");
-        const rateFields = JSON.parse(row.rate_fields || "[]") as string[];
+        const trackedFields = JSON.parse(row.tracked_fields || "[]") as string[];
         const dedupeKey = JSON.parse(row.dedupe_key || "[]") as string[];
-        return `- ${s.display_name} (id: ${s.id}, fields: ${fields}, tracked: ${rateFields.join(", ") || "none"}, dedupe: ${dedupeKey.join(", ") || "none"})`;
+        return `- ${s.display_name} (id: ${s.id}, fields: ${fields}, tracked: ${trackedFields.join(", ") || "none"}, dedupe: ${dedupeKey.join(", ") || "none"})`;
       } catch { return `- ${s.display_name} (id: ${s.id})`; }
     }).join("\n");
 
@@ -656,7 +668,7 @@ Respond ONLY with valid JSON in this exact shape — no markdown, no explanation
     ],
     "url_field": "url",
     "dedupe_key": ["primaryNameField"],
-    "rate_fields": ["numericOrChangingField"],
+    "tracked_fields": ["changingField"],
     "naming_rules": ["fieldName: normalization instruction"]
   }
 }
@@ -665,7 +677,7 @@ Rules:
 - Always include a "url" field (url_field must point to it)
 - Put the entity's primary name as the first field (e.g. bankName, schoolName, sellerName)
 - dedupe_key: fields that uniquely identify a record (primary name + variant/product typically)
-- rate_fields: numeric or frequently-changing fields (prices, rates, scores) — omit if none
+- tracked_fields: fields to actively refresh on updates (frequently-changing values) — omit if none
 - naming_rules: short instructions like "bankName: use official brand name, not branch" — omit if not needed
 - field names in camelCase, id in kebab-case, optional: true for fields that may not always exist`;
 

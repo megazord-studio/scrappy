@@ -17,7 +17,7 @@
   let fields = $state<FieldRow[]>([]);
   let schemaId = $state('');
   let schemaDisplayName = $state('');
-  let schemaMeta = $state({ urlField: 'url', dedupeKey: [] as string[], rateFields: [] as string[], namingRules: [] as string[] });
+  let schemaMeta = $state({ urlField: 'url', dedupeKey: [] as string[], trackedFields: [] as string[], namingRules: [] as string[] });
   let depth = $state(2);
   let submitting = $state(false);
   let error = $state<string | null>(null);
@@ -62,7 +62,7 @@
     schemaMeta = {
       urlField: s.url_field || 'url',
       dedupeKey: s.dedupe_key ?? [],
-      rateFields: s.rate_fields ?? [],
+      trackedFields: s.tracked_fields ?? [],
       namingRules: s.naming_rules ?? [],
     };
     fields = s.fields.map(f => ({ name: f.name, optional: f.optional ?? false, description: f.description }));
@@ -104,7 +104,7 @@
       fields: flds,
       dedupe_key: schemaMeta.dedupeKey,
       url_field: schemaMeta.urlField,
-      rate_fields: schemaMeta.rateFields,
+      tracked_fields: schemaMeta.trackedFields,
       naming_rules: schemaMeta.namingRules,
     };
 

@@ -8,8 +8,8 @@ export interface SchemaDefinition {
   dedupeKey: string[];
   /** Which field contains the official provider URL to scrape during update */
   urlField: string;
-  /** Which field contains the rate(s) to refresh during update */
-  rateFields: string[];
+  /** Which fields to refresh during update */
+  trackedFields: string[];
   /** Optional naming/consistency rules passed to the LLM during extraction (e.g. how to normalise names) */
   namingRules?: string[];
   /** URLs to scrape first, before the agent starts searching */

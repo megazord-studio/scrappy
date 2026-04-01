@@ -17,15 +17,15 @@ export function normalizeForMatch(s: string): string {
     .replace(/ae/g, "a").replace(/oe/g, "o").replace(/ue/g, "u");
 }
 
-// Build a keyword regex from the schema: rateFields, field names, dedupeKey, field descriptions
+// Build a keyword regex from the schema: trackedFields, field names, dedupeKey, field descriptions
 export function buildSchemaKeywordRe(schemaDef: SchemaDefinition): RegExp | null {
   const STOP = new Set(["name", "value", "field", "data", "info", "page", "item", "list",
     "type", "date", "time", "text", "link", "from", "with", "that", "this", "have",
     "will", "been", "they", "their", "url", "the", "and", "for", "per"]);
   const words = new Set<string>();
 
-  // rateFields are the strongest hint — they're literally what we're looking for
-  for (const f of schemaDef.rateFields) {
+  // trackedFields are the strongest hint — they're literally what we're looking for
+  for (const f of schemaDef.trackedFields) {
     splitIdentifier(f).forEach(w => { if (w.length >= 3 && !STOP.has(w)) words.add(normalizeForMatch(w)); });
   }
   // field names and dedupe keys
@@ -40,11 +40,11 @@ export function buildSchemaKeywordRe(schemaDef: SchemaDefinition): RegExp | null
   return words.size > 0 ? new RegExp([...words].join("|"), "i") : null;
 }
 
-// Build a regex from rateFields only — the strongest path signal because
+// Build a regex from trackedFields only — the strongest path signal because
 // they name the exact data we're looking for (e.g. "zinssatz" → zinssaetze.html).
 export function buildFieldValueRe(schemaDef: SchemaDefinition): RegExp | null {
   const words = new Set<string>();
-  for (const f of schemaDef.rateFields) {
+  for (const f of schemaDef.trackedFields) {
     splitIdentifier(f).forEach(w => { if (w.length >= 3) words.add(normalizeForMatch(w)); });
   }
   return words.size > 0 ? new RegExp([...words].join("|"), "i") : null;
@@ -58,7 +58,7 @@ export const detailPageRe = /detail|spec|pricing|price|feature|kondition|tarif|p
 // Score a link by how likely it leads to relevant data.
 // URL path keywords are a strong signal; anchor text alone is weak (navigation menus
 // often contain field-relevant terms but link to generic landing pages).
-export function rateLinkScore(
+export function linkScore(
   link: PageLink,
   fieldValueRe: RegExp | null,
   schemaKeywordRe: RegExp | null

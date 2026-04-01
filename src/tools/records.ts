@@ -38,12 +38,12 @@ function makeKey(record: CsvRow, dedupeKey: string[]): string {
   return dedupeKey.map((k) => normalizeField(k, String(record[k] ?? ""))).join("|");
 }
 
-function makeUrlRateKey(record: CsvRow, schemaDef: SchemaDefinition): string | null {
+function makeUrlFieldKey(record: CsvRow, schemaDef: SchemaDefinition): string | null {
   const bank = normalizeField("bankName", String(record["bankName"] ?? ""));
   const url = normalizeUrlForDedup(String(record[schemaDef.urlField] ?? ""));
   if (!bank || !url) return null;
-  const rates = schemaDef.rateFields.map((f) => String(record[f] ?? "").trim().toLowerCase()).join("|");
-  return `${bank}|${url}|${rates}`;
+  const fieldValues = schemaDef.trackedFields.map((f) => String(record[f] ?? "").trim().toLowerCase()).join("|");
+  return `${bank}|${url}|${fieldValues}`;
 }
 
 // ─── Row serialization ───────────────────────────────────────────────────────
@@ -134,7 +134,7 @@ export async function appendRecords(
   const existing = readRecords(dataset, db);
   const existingByKey = new Map(existing.map((r) => [makeKey(r, schemaDef.dedupeKey), r]));
   const existingUrlRateKeys = new Set(
-    existing.map((r) => makeUrlRateKey(r, schemaDef)).filter((k): k is string => k !== null)
+    existing.map((r) => makeUrlFieldKey(r, schemaDef)).filter((k): k is string => k !== null)
   );
 
   const toInsert: CsvRow[] = [];
@@ -149,7 +149,7 @@ export async function appendRecords(
       }
       continue;
     }
-    const urk = makeUrlRateKey(r, schemaDef);
+    const urk = makeUrlFieldKey(r, schemaDef);
     if (urk && existingUrlRateKeys.has(urk)) continue;
     toInsert.push(r);
   }
@@ -288,7 +288,8 @@ export function mergeRecords(
 
 export function deduplicateDataset(
   dataset: string,
-  db: Database.Database
+  db: Database.Database,
+  dedupeKey?: string[]
 ): { before: number; after: number; removed: number } {
   const dbRows = db
     .prepare("SELECT * FROM records WHERE dataset = ? ORDER BY id")
@@ -306,20 +307,17 @@ export function deduplicateDataset(
 
   for (const row of sorted) {
     const parsed = JSON.parse(row.data) as Record<string, string>;
-    const key = Object.entries(parsed)
-      .filter(([k]) => k !== "url")
-      .map(([, v]) => (v ?? "").toLowerCase())
-      .join("|");
-    const urlKey = parsed["url"] && parsed["bankName"]
-      ? `${normalizeField("bankName", parsed["bankName"] ?? "")}|${normalizeUrlForDedup(parsed["url"])}`
-      : null;
+    const key = dedupeKey && dedupeKey.length > 0
+      ? makeKey(parsed, dedupeKey)
+      : Object.entries(parsed)
+          .filter(([k]) => k !== "url")
+          .map(([, v]) => (v ?? "").toLowerCase())
+          .join("|");
 
-    const dupKey = urlKey ?? key;
-    if (seen.has(key) || (urlKey && seen.has(urlKey))) {
+    if (seen.has(key)) {
       toDelete.push(row.id);
     } else {
       seen.set(key, row.id);
-      if (urlKey) seen.set(urlKey, row.id);
     }
   }
 

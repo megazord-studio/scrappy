@@ -37,7 +37,7 @@ export async function seedSchemasFromFiles(db: Database.Database): Promise<void>
         fields,
         dedupe_key: def.dedupeKey,
         url_field: def.urlField,
-        rate_fields: def.rateFields,
+        tracked_fields: def.trackedFields,
         naming_rules: def.namingRules,
       });
     } catch (err) {

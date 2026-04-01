@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getRecords, cancelJob, startIndexJob, startUpdateJob, getDatasetSchema, getQaIssues } from '../lib/api';
+  import { getRecords, cancelJob, startIndexJob, startUpdateJob, getDatasetSchema, getQaIssues, dedupeOutput } from '../lib/api';
   import { dashStore } from '../stores/dashboard.svelte';
   import { jobsStore } from '../stores/jobs.svelte';
   import ChatPanel from './ChatPanel.svelte';
@@ -38,6 +38,17 @@
   );
 
   let runningAction = $state<string | null>(null);
+  let dedupeResult = $state<{ removed: number } | null>(null);
+
+  async function handleDedupe() {
+    runningAction = 'dedupe';
+    try {
+      const res = await dedupeOutput(output) as { removed: number };
+      dedupeResult = res;
+      await loadRecords();
+      setTimeout(() => { dedupeResult = null; }, 4000);
+    } finally { runningAction = null; }
+  }
 
   async function getSchema(): Promise<string | null> {
     return latestJob?.params.schema ?? await getDatasetSchema(output);
@@ -92,10 +103,10 @@
   const maxIterations  = $derived(dashStore.state.maxIterations);
 
   // Columns: skip URL-looking fields, keep at most 5 data columns
+  const urlCol = $derived(headers.find(h => /(^url$|^uri$|link|href)/i.test(h)) ?? null);
   const displayCols = $derived(
     headers
       .filter(h => !/(^url$|^uri$|link|href)/i.test(h))
-      .slice(0, 5)
   );
   const primaryCol = $derived(displayCols[0] ?? headers[0] ?? '');
 
@@ -209,6 +220,21 @@
               <span class="msicon" style="font-size:15px">sync</span>
               Update All
             </button>
+            <button
+              class="hdr-btn"
+              onclick={handleDedupe}
+              disabled={runningAction !== null || rows.length === 0}
+              title="Remove duplicate records"
+            >
+              <span class="msicon" style="font-size:15px" class:spinning={runningAction === 'dedupe'}>
+                {runningAction === 'dedupe' ? 'hourglass_empty' : 'deblur'}
+              </span>
+              {#if dedupeResult !== null}
+                {dedupeResult.removed} removed
+              {:else}
+                Dedupe
+              {/if}
+            </button>
           {/if}
         </div>
 
@@ -314,6 +340,17 @@
                 </td>
                 <td>
                   <div class="row-actions">
+                    {#if urlCol && row[urlCol]}
+                      <a
+                        class="row-action"
+                        href={row[urlCol]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        title={row[urlCol]}
+                      >
+                        <span class="msicon">open_in_new</span>
+                      </a>
+                    {/if}
                     <button
                       class="row-action"
                       onclick={() => handleUpdateRow(rowId)}
@@ -472,6 +509,7 @@
   .table-wrap {
     flex: 1;
     overflow-y: auto;
+    overflow-x: auto;
     border-top: 1px solid rgba(255,255,255,0.03);
     border-bottom: 1px solid rgba(255,255,255,0.03);
   }

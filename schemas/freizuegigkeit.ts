@@ -24,7 +24,7 @@ const schemaDef: SchemaDefinition = {
   },
   dedupeKey: ["kontoName", "bankName"],
   urlField: "url",
-  rateFields: ["zinssatz"],
+  trackedFields: ["zinssatz"],
   namingRules: [
     "kontoName: use the EXACT official product name as shown on the provider's own website. Never invent generic names like \"Freizügigkeitskonto\" unless that is literally what the bank calls it.",
     "bankName: use the bank's common short name without legal suffixes (e.g. \"Migros Bank\" not \"Migros Bank AG\"). Be consistent across all records for the same bank.",

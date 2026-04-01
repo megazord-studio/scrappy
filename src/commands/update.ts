@@ -14,7 +14,7 @@ import {
   buildSchemaKeywordRe,
   buildFieldValueRe,
   detailPageRe,
-  rateLinkScore,
+  linkScore,
 } from "../lib/link-score.js";
 const _require = createRequire(import.meta.url);
 const pdfParse = _require("pdf-parse") as (buf: Buffer) => Promise<{ text: string }>;
@@ -25,7 +25,7 @@ function extractNums(s: string): number[] {
     .filter((n) => !isNaN(n));
 }
 
-function rateNumericallyEqual(a: string, b: string): boolean {
+function valuesNumericallyEqual(a: string, b: string): boolean {
   const na = extractNums(a);
   const nb = extractNums(b);
   if (na.length === 0 && nb.length === 0) return a.trim() === b.trim();
@@ -184,20 +184,20 @@ ${markdown}`,
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) return null;
     const extracted = JSON.parse(jsonMatch[0]) as Record<string, unknown>;
-    for (const f of schemaDef.rateFields) {
+    for (const f of schemaDef.trackedFields) {
       if (typeof extracted[f] === "string") {
         extracted[f] = (extracted[f] as string).replace(/,(\d)/g, ".$1").trim();
       }
     }
-    const hasData = schemaDef.rateFields.some((f) => extracted[f] != null && extracted[f] !== "");
+    const hasData = schemaDef.trackedFields.some((f) => extracted[f] != null && extracted[f] !== "");
     return hasData ? extracted : null;
   }
 
   async function extractAndUpdate(row: CsvRow, url: string, providerName: string, isRootFallback = false): Promise<boolean> {
-    const rateFieldDescriptions = schemaDef.rateFields
+    const rateFieldDescriptions = schemaDef.trackedFields
       .map((f) => `  - ${f}: ${schemaDef.fieldDescriptions[f] ?? f}`)
       .join("\n");
-    const bm25Query = schemaDef.rateFields
+    const bm25Query = schemaDef.trackedFields
       .map((f) => schemaDef.fieldDescriptions[f] ?? f)
       .join(" ");
 
@@ -228,13 +228,13 @@ ${markdown}`,
         const extracted = await llmExtract(pdfText, providerName, rateFieldDescriptions);
         if (extracted) {
           const patch: CsvRow = { ...row };
-          for (const f of schemaDef.rateFields) { if (extracted[f] != null) patch[f] = extracted[f]; }
+          for (const f of schemaDef.trackedFields) { if (extracted[f] != null) patch[f] = extracted[f]; }
           patch[urlField] = url;
           patch._dataSource = "official";
           patch._lastUpdated = new Date().toISOString().split("T")[0];
-          const oldValue = schemaDef.rateFields.map((f) => `${f}=${row[f]}`).join(", ");
-          const newValue = schemaDef.rateFields.map((f) => `${f}=${patch[f]}`).join(", ");
-          const changed = schemaDef.rateFields.some((f) => !rateNumericallyEqual(String(row[f] ?? ""), String(patch[f] ?? "")));
+          const oldValue = schemaDef.trackedFields.map((f) => `${f}=${row[f]}`).join(", ");
+          const newValue = schemaDef.trackedFields.map((f) => `${f}=${patch[f]}`).join(", ");
+          const changed = schemaDef.trackedFields.some((f) => !valuesNumericallyEqual(String(row[f] ?? ""), String(patch[f] ?? "")));
           log("update_row", { provider: providerName, url, oldValue, newValue, changed });
           const { updated: u } = await updateRecords([patch], dataset, schemaDef, db);
           updates += u;
@@ -253,7 +253,9 @@ ${markdown}`,
     let { markdown, links } = await fetchMd(url, bm25Query);
     log("scrape_done", { url, provider: providerName, chars: markdown.length, method: "bm25" });
 
-    let extracted = await llmExtract(markdown, providerName, rateFieldDescriptions);
+    // Treat very short BM25 responses as empty — the page is likely JS-rendered
+    // and the LLM might hallucinate values from the URL/context alone
+    let extracted = markdown.length >= 200 ? await llmExtract(markdown, providerName, rateFieldDescriptions) : null;
 
     // Stage 2: fallback to full /crawl when BM25 found no data
     // (full crawl exposes all page links including PDFs, which BM25 strips out)
@@ -276,7 +278,7 @@ ${markdown}`,
       // strip fragment from current url for comparison (anchor-only links add no new content)
       const currentBase = (() => { try { const u = new URL(url); u.hash = ""; return u.href; } catch { return url; } })();
       const candidates = links
-        .map(l => ({ link: l, score: rateLinkScore(l, fieldValueRe, schemaKeywordRe) }))
+        .map(l => ({ link: l, score: linkScore(l, fieldValueRe, schemaKeywordRe) }))
         .filter(({ score, link }) => {
           if (score <= 0) return false;
           // skip links that are just fragments of the current page (same content, different scroll pos)
@@ -337,7 +339,7 @@ ${markdown}`,
               // score and prefer PDFs whose link text suggests rate content (e.g. "Die Zinssätze")
               const deepPdfs = pageLinks
                 .filter(l => l.url.toLowerCase().endsWith(".pdf") && !triedUrls.has(l.url))
-                .sort((a, b) => rateLinkScore(b, fieldValueRe, schemaKeywordRe) - rateLinkScore(a, fieldValueRe, schemaKeywordRe))
+                .sort((a, b) => linkScore(b, fieldValueRe, schemaKeywordRe) - linkScore(a, fieldValueRe, schemaKeywordRe))
                 .slice(0, deepSearch ? 10 : 5);
               for (const pdf of deepPdfs) {
                 triedUrls.add(pdf.url);
@@ -380,16 +382,16 @@ ${markdown}`,
     }
 
     const patch: CsvRow = { ...row };
-    for (const f of schemaDef.rateFields) {
+    for (const f of schemaDef.trackedFields) {
       if (extracted[f] != null) patch[f] = extracted[f];
     }
     patch[urlField] = url;
     patch._dataSource = "official";
     patch._lastUpdated = new Date().toISOString().split("T")[0];
 
-    const oldValue = schemaDef.rateFields.map((f) => `${f}=${row[f]}`).join(", ");
-    const newValue = schemaDef.rateFields.map((f) => `${f}=${patch[f]}`).join(", ");
-    const changed = schemaDef.rateFields.some((f) => !rateNumericallyEqual(String(row[f] ?? ""), String(patch[f] ?? "")));
+    const oldValue = schemaDef.trackedFields.map((f) => `${f}=${row[f]}`).join(", ");
+    const newValue = schemaDef.trackedFields.map((f) => `${f}=${patch[f]}`).join(", ");
+    const changed = schemaDef.trackedFields.some((f) => !valuesNumericallyEqual(String(row[f] ?? ""), String(patch[f] ?? "")));
     log("update_row", { provider: providerName, url, oldValue, newValue, changed });
 
     const { updated: u } = await updateRecords([patch], dataset, schemaDef, db);
@@ -420,8 +422,8 @@ ${markdown}`,
         const providerName = schemaDef.dedupeKey.map((k) => row[k]).join(" / ");
         try {
           // Append rate field names to the search query to target the rates page directly
-          const rateKeyword = schemaDef.rateFields.join(" ");
-          const searchQuery = `${providerName} ${rateKeyword}`;
+          const fieldKeyword = schemaDef.trackedFields.join(" ");
+          const searchQuery = `${providerName} ${fieldKeyword}`;
           log("log", { message: `Searching for official URL: ${searchQuery}` });
           const results = await searchGoogle(searchQuery, serpApiKey);
           const officialUrl = results.find((u) => !isComparisonUrl(u));

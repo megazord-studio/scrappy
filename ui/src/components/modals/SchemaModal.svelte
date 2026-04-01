@@ -31,7 +31,7 @@
   let dedupeKey = $state('');
   let urlField = $state('url');
   let entityField = $state('');
-  let rateFields = $state('');
+  let trackedFields = $state('');
   let namingRules = $state('');
   let fields = $state<FieldRow[]>([{ name: '', optional: false, description: '' }]);
   let statusText = $state('');
@@ -60,7 +60,7 @@
         dedupeKey = '';
         urlField = 'url';
         entityField = '';
-        rateFields = '';
+        trackedFields = '';
         namingRules = '';
         fields = [{ name: '', optional: false, description: '' }];
         statusText = '';
@@ -91,7 +91,7 @@
     displayName = s.display_name;
     urlField = s.url_field || 'url';
     dedupeKey = (s.dedupe_key ?? []).join(', ');
-    rateFields = (s.rate_fields ?? []).join(', ');
+    trackedFields = (s.tracked_fields ?? []).join(', ');
     namingRules = (s.naming_rules ?? []).join('\n');
     entityField = '';
     fields = s.fields.map(f => ({ name: f.name, optional: f.optional ?? false, description: f.description }));
@@ -114,7 +114,7 @@
     dedupeKey = JSON.parse(row.dedupe_key as unknown as string).join(', ');
     urlField = row.url_field;
     entityField = row.entity_field ?? '';
-    rateFields = JSON.parse(row.rate_fields as unknown as string).join(', ');
+    trackedFields = JSON.parse(row.tracked_fields as unknown as string).join(', ');
     const namingArr = row.naming_rules ? JSON.parse(row.naming_rules as unknown as string) : [];
     namingRules = namingArr.join('\n');
     const parsedFields = JSON.parse(row.fields as unknown as string);
@@ -143,7 +143,7 @@
     const dnVal = displayName.trim();
     const ufVal = urlField.trim();
     const dk = dedupeKey.split(',').map(s => s.trim()).filter(Boolean);
-    const rf = rateFields.split(',').map(s => s.trim()).filter(Boolean);
+    const rf = trackedFields.split(',').map(s => s.trim()).filter(Boolean);
     const nr = namingRules.trim() ? namingRules.split('\n').map(s => s.trim()).filter(Boolean) : [];
     const flds = fields.filter(f => f.name.trim()).map(f => ({
       name: f.name.trim(),
@@ -159,7 +159,7 @@
     }
 
     const efVal = entityField.trim() || undefined;
-    const body = { id: idVal, display_name: dnVal, fields: flds, dedupe_key: dk, url_field: ufVal, entity_field: efVal, rate_fields: rf, naming_rules: nr };
+    const body = { id: idVal, display_name: dnVal, fields: flds, dedupe_key: dk, url_field: ufVal, entity_field: efVal, tracked_fields: rf, naming_rules: nr };
     const res = await saveSchema(body, editingId) as { error?: string; ok?: boolean };
     if (res.ok === false) {
       statusColor = '#f44336';
@@ -320,7 +320,7 @@
           </div>
           <div class="sm-field">
             <label class="sm-label" for="sm-rate-fields">Tracked fields <span class="sm-hint">monitored for changes</span></label>
-            <input id="sm-rate-fields" class="sm-input" type="text" bind:value={rateFields} placeholder="zins, ter" />
+            <input id="sm-rate-fields" class="sm-input" type="text" bind:value={trackedFields} placeholder="zins, ter" />
           </div>
         </div>
         <div class="sm-row-1">

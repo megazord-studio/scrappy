@@ -6,6 +6,7 @@
   import HistoryScreen from './components/HistoryScreen.svelte';
   import SchemasScreen from './components/SchemasScreen.svelte';
   import ExtractionsScreen from './components/ExtractionsScreen.svelte';
+  import MonitorScreen from './components/MonitorScreen.svelte';
   import SettingsModal from './components/modals/SettingsModal.svelte';
   import SchemaModal from './components/modals/SchemaModal.svelte';
   import { jobsStore } from './stores/jobs.svelte';
@@ -27,7 +28,7 @@
     if (raw === 'schemas')     return 'schemas';
     if (raw === 'sources')     return 'sources';
     if (raw === 'extractions') return 'extractions';
-    if (raw === 'monitor')     return 'history'; // legacy redirect
+    if (raw === 'monitor')     return 'monitor';
     return 'discovery';
   }
 
@@ -112,6 +113,8 @@
     <div class="app-content">
       {#if screen === 'discovery'}
         <DiscoveryScreen onNavigate={navigate} />
+      {:else if screen === 'monitor'}
+        <MonitorScreen />
       {:else if screen === 'history'}
         <HistoryScreen onOpenExtraction={openExtraction} />
       {:else if screen === 'extractions'}

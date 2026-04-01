@@ -38,7 +38,7 @@ db.exec(`
     fields       TEXT NOT NULL,
     dedupe_key   TEXT NOT NULL,
     url_field    TEXT NOT NULL,
-    rate_fields  TEXT NOT NULL,
+    tracked_fields TEXT NOT NULL,
     naming_rules TEXT,
     created_at   TEXT NOT NULL,
     updated_at   TEXT NOT NULL
@@ -58,6 +58,8 @@ db.exec(`
 
 // Add entity_field column to schemas if not present (idempotent migration)
 try { db.exec(`ALTER TABLE schemas ADD COLUMN entity_field TEXT`); } catch { /* already exists */ }
+// Rename rate_fields → tracked_fields (idempotent migration)
+try { db.exec(`ALTER TABLE schemas RENAME COLUMN rate_fields TO tracked_fields`); } catch { /* already renamed */ }
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS qa_issues (
