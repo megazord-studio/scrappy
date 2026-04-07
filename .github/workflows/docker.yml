@@ -8,6 +8,7 @@ env:
   REGISTRY: ghcr.io
   APP_IMAGE: ghcr.io/${{ github.repository_owner }}/scrappy
   DOCS_IMAGE: ghcr.io/${{ github.repository_owner }}/scrappy-docs
+  LANDING_IMAGE: ghcr.io/${{ github.repository_owner }}/scrappy-landing
 
 jobs:
   build:
@@ -67,3 +68,15 @@ jobs:
             ghcr.io/${{ env.OWNER }}/scrappy-docs:${{ env.VERSION }}
           cache-from: type=gha,scope=docs
           cache-to: type=gha,mode=max,scope=docs
+
+      - name: Build and push landing image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.landing
+          push: true
+          tags: |
+            ghcr.io/${{ env.OWNER }}/scrappy-landing:latest
+            ghcr.io/${{ env.OWNER }}/scrappy-landing:${{ env.VERSION }}
+          cache-from: type=gha,scope=landing
+          cache-to: type=gha,mode=max,scope=landing

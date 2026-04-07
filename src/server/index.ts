@@ -69,14 +69,16 @@ app.post("/settings", async (req) => {
 // --- schemas & outputs ---
 app.get("/schemas", async () => ({ schemas: listSchemas() }));
 app.get("/outputs", async () => ({ outputs: listOutputs() }));
-app.get("/outputs/:dataset/schema", async (req, reply) => {
+app.get("/outputs/:dataset/schema", async (req) => {
   const { dataset } = req.params as { dataset: string };
   const name = dataset.replace(/\.csv$/i, "");
   const row = db.prepare(
-    "SELECT params FROM jobs WHERE type='index' AND json_extract(params, '$.output') = ? ORDER BY started_at DESC LIMIT 1"
-  ).get(name) as { params: string } | undefined;
-  if (!row) return reply.code(404).send({ schemaId: null });
-  const schemaId = (JSON.parse(row.params) as Record<string, string>).schema ?? null;
+    `SELECT params FROM jobs
+     WHERE json_extract(params, '$.schema') IS NOT NULL
+       AND (json_extract(params, '$.output') = ? OR json_extract(params, '$.input') = ?)
+     ORDER BY started_at DESC LIMIT 1`
+  ).get(name, name) as { params: string } | undefined;
+  const schemaId = row ? ((JSON.parse(row.params) as Record<string, string>).schema ?? null) : null;
   return { schemaId };
 });
 
@@ -532,7 +534,12 @@ app.get("/entities/:key/records", async (req, reply) => {
         const jobRow = db.prepare(
           "SELECT params FROM jobs WHERE type='index' AND json_extract(params, '$.output') = ? ORDER BY started_at DESC LIMIT 1"
         ).get(row.dataset) as { params: string } | undefined;
-        const schema_id = jobRow ? ((JSON.parse(jobRow.params) as Record<string, string>).schema ?? null) : null;
+        let schema_id = jobRow ? ((JSON.parse(jobRow.params) as Record<string, string>).schema ?? null) : null;
+        // Fallback: find a schema that has this entity_field set
+        if (!schema_id) {
+          const schemaRow = db.prepare("SELECT id FROM schemas WHERE entity_field = ? LIMIT 1").get(fieldName) as { id: string } | undefined;
+          schema_id = schemaRow?.id ?? null;
+        }
         datasetMap.set(row.dataset, { schema_id, records: [] });
       }
       datasetMap.get(row.dataset)!.records.push({ ...data, _id: String(row.id) });
@@ -701,6 +708,7 @@ Rules:
     } catch {
       return reply.code(500).send({ error: "LLM returned invalid JSON", raw: text });
     }
+
     return reply.send(parsed);
   } catch (e) {
     return reply.code(500).send({ error: String(e) });

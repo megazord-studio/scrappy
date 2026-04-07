@@ -212,8 +212,6 @@
     overflow-y: auto;
     padding: 2.5rem 2.5rem 4rem;
     position: relative;
-    max-width: 1400px;
-    margin: 0 auto;
   }
 
   .hero {
