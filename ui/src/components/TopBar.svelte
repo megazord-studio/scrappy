@@ -20,6 +20,8 @@
     extractions: 'Extractions',
   };
 
+  import { authStore } from '../stores/auth.svelte';
+
   let isLight = $state(document.documentElement.dataset.theme === 'light');
 
   function toggleTheme() {
@@ -57,6 +59,19 @@
       <span class="node-dot"></span>
       <span class="node-label">Node Online</span>
     </div>
+
+    {#if authStore.user}
+      <div class="user-badge">
+        <span class="msicon user-icon">person</span>
+        <span class="user-email">{authStore.user.email}</span>
+        {#if authStore.isAdmin}
+          <span class="role-chip">admin</span>
+        {/if}
+      </div>
+      <button class="action-btn" onclick={() => authStore.signOut()} title="Sign out">
+        <span class="msicon">logout</span>
+      </button>
+    {/if}
   </div>
 </header>
 
@@ -184,5 +199,44 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--on-surface-muted);
+  }
+
+  .user-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-left: 0.25rem;
+    padding: 0.25rem 0.65rem;
+    background: var(--surface-container);
+    border: 1px solid var(--c-border-light);
+    max-width: 200px;
+    overflow: hidden;
+  }
+  .user-icon {
+    font-size: 14px !important;
+    color: var(--on-surface-muted);
+    flex-shrink: 0;
+  }
+  .user-email {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.58rem;
+    letter-spacing: 0.05em;
+    color: var(--on-surface-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .role-chip {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--primary-container);
+    background: rgba(255,89,10,0.1);
+    border: 1px solid rgba(255,89,10,0.2);
+    padding: 0.1rem 0.35rem;
+    border-radius: 2px;
+    flex-shrink: 0;
   }
 </style>

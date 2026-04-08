@@ -262,6 +262,17 @@ button:disabled { opacity: 0.35; cursor: not-allowed; }
 .badge.cancelled{ background: rgba(255,255,255,0.05); color: var(--c-text-secondary); border-color: var(--c-border); }
 .badge.pass     { background: rgba(52,211,153,0.1); color: #34d399; border-color: rgba(52,211,153,0.2); }
 
+/* ─── Auth loading state ─── */
+.auth-loader {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  z-index: 200;
+}
+
 /* ─── Spinner ─── */
 .spinner {
   display: inline-block; width: 7px; height: 7px;

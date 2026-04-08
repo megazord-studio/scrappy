@@ -1,0 +1,679 @@
+<!doctype html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>Pricing — Scrappy</title>
+    <meta
+      name="description"
+      content="Scrappy pricing — request early access and be first to know when plans go live."
+    />
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;800;900&family=Space+Grotesk:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
+      rel="stylesheet"
+    />
+    <script id="tailwind-config">
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              surface: "var(--color-surface)",
+              "surface-container-lowest":
+                "var(--color-surface-container-lowest)",
+              "surface-container-low": "var(--color-surface-container-low)",
+              "surface-container": "var(--color-surface-container)",
+              "surface-container-high": "var(--color-surface-container-high)",
+              "surface-container-highest":
+                "var(--color-surface-container-highest)",
+              "surface-bright": "var(--color-surface-bright)",
+              "on-surface": "var(--color-on-surface)",
+              "on-surface-variant": "var(--color-on-surface-variant)",
+              "primary-container": "#ff590a",
+              "on-primary-fixed": "var(--color-on-primary-fixed)",
+              "outline-variant": "#5b4037",
+            },
+            fontFamily: {
+              headline: ["Inter", "sans-serif"],
+              body: ["Inter", "sans-serif"],
+              label: ["Space Grotesk", "monospace"],
+            },
+            borderRadius: {
+              DEFAULT: "0.25rem",
+              sm: "0.125rem",
+              lg: "0.5rem",
+              xl: "1rem",
+              full: "9999px",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        --color-surface: #131313;
+        --color-surface-container-lowest: #0e0e0e;
+        --color-surface-container-low: #1b1b1b;
+        --color-surface-container: #1f1f1f;
+        --color-surface-container-high: #2a2a2a;
+        --color-surface-container-highest: #353535;
+        --color-surface-bright: #393939;
+        --color-on-surface: #e2e2e2;
+        --color-on-surface-variant: #e4beb2;
+        --color-on-primary-fixed: #380c00;
+        --color-outline-variant: #5b4037;
+        --dot-color: rgba(255, 89, 10, 0.08);
+        --glass-bg: rgba(31, 31, 31, 0.7);
+        --nav-bg: rgba(19, 19, 19, 0.7);
+        --footer-bg: #131313;
+        --scrollbar-bg: #353535;
+      }
+
+      html[data-theme="light"] {
+        --color-surface: #f8f9fa;
+        --color-surface-container-lowest: #ffffff;
+        --color-surface-container-low: #f4f5f6;
+        --color-surface-container: #ecedef;
+        --color-surface-container-high: #e7e8e9;
+        --color-surface-container-highest: #dddee0;
+        --color-surface-bright: #ffffff;
+        --color-on-surface: #1a1a1a;
+        --color-on-surface-variant: #7c6e69;
+        --color-on-primary-fixed: #ffffff;
+        --color-outline-variant: #e4beb2;
+        --dot-color: rgba(228, 190, 178, 0.4);
+        --glass-bg: rgba(244, 245, 246, 0.8);
+        --nav-bg: rgba(248, 249, 250, 0.8);
+        --footer-bg: #f4f5f6;
+        --scrollbar-bg: #dddee0;
+      }
+
+      html[data-theme="light"] [class*="border-outline-variant"] {
+        border-color: rgba(180, 140, 130, 0.35) !important;
+      }
+
+      body {
+        background-color: var(--color-surface);
+        background-image: radial-gradient(var(--dot-color) 1px, transparent 0);
+        background-size: 32px 32px;
+        color: var(--color-on-surface);
+        transition:
+          background-color 0.2s,
+          color 0.2s;
+      }
+
+      .material-symbols-outlined {
+        font-variation-settings:
+          "FILL" 0,
+          "wght" 300,
+          "GRAD" 0,
+          "opsz" 24;
+      }
+
+      nav { background: var(--nav-bg) !important; }
+      footer { background: var(--footer-bg) !important; }
+
+      ::-webkit-scrollbar {
+        width: 6px;
+      }
+      ::-webkit-scrollbar-track {
+        background: var(--color-surface);
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--scrollbar-bg);
+        border-radius: 3px;
+      }
+
+      #theme-toggle .icon-dark {
+        display: block;
+      }
+      #theme-toggle .icon-light {
+        display: none;
+      }
+      html[data-theme="light"] #theme-toggle .icon-dark {
+        display: none;
+      }
+      html[data-theme="light"] #theme-toggle .icon-light {
+        display: block;
+      }
+
+      .plan-card {
+        transition:
+          border-color 0.2s,
+          transform 0.2s;
+      }
+      .plan-card:hover {
+        border-color: rgba(255, 89, 10, 0.3);
+        transform: translateY(-2px);
+      }
+      .plan-card.featured {
+        border-color: rgba(255, 89, 10, 0.5);
+      }
+    </style>
+  </head>
+  <body class="font-body text-on-surface antialiased">
+    <!-- Nav -->
+    <nav class="fixed top-0 w-full z-50 backdrop-blur-xl">
+      <div
+        class="flex justify-between items-center max-w-7xl mx-auto px-8 h-20"
+      >
+        <a
+          href="index.html"
+          class="text-xl font-black tracking-tighter text-on-surface uppercase font-headline hover:text-primary-container transition-colors"
+        >
+          Scrappy
+        </a>
+        <div
+          class="hidden md:flex items-center space-x-8 font-headline font-bold tracking-tight text-sm"
+        >
+          <a
+            class="text-gray-400 hover:text-on-surface transition-colors"
+            href="index.html"
+            >Platform</a
+          >
+          <a
+            class="text-[#FF590A] border-b-2 border-[#FF590A] pb-1"
+            href="pricing.html"
+            >Pricing</a
+          >
+        </div>
+        <div class="flex items-center space-x-6">
+          <button
+            id="theme-toggle"
+            onclick="toggleTheme()"
+            class="text-gray-400 hover:text-on-surface transition-colors p-1"
+            style="
+              background: none;
+              border: none;
+              cursor: pointer;
+              width: auto;
+              line-height: 1;
+            "
+          >
+            <span
+              class="material-symbols-outlined icon-dark"
+              style="font-size: 20px"
+              >light_mode</span
+            >
+            <span
+              class="material-symbols-outlined icon-light"
+              style="font-size: 20px"
+              >dark_mode</span
+            >
+          </button>
+          <a
+            href="https://app.scrappy.kube.megazord.studio/signin"
+            class="text-gray-400 hover:text-[#e2e2e2] transition-colors font-headline font-bold tracking-tight text-sm"
+            style="color: var(--color-on-surface); opacity: 0.6"
+            >Sign In</a
+          >
+          <a
+            href="https://app.scrappy.kube.megazord.studio/signup"
+            class="bg-primary-container text-on-primary-fixed px-6 py-2 rounded-sm font-headline font-bold tracking-tight text-sm hover:scale-95 duration-200 transition-all"
+            >Get Started</
+          >
+        </div>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="pt-48 pb-20 relative overflow-hidden">
+      <div class="max-w-4xl mx-auto px-8 text-center relative z-10">
+        <div
+          class="inline-block p-[1px] rounded-sm bg-gradient-to-r from-primary-container to-transparent mb-10"
+        >
+          <div
+            class="bg-surface px-8 py-2.5 rounded-sm font-label text-xs uppercase text-primary-container font-bold tracking-[0.2em]"
+          >
+            Pricing coming soon
+          </div>
+        </div>
+        <h1
+          class="font-headline text-6xl md:text-8xl font-black text-on-surface mb-6 leading-[0.9] tracking-tight"
+        >
+          Unlock the Web<br /><span class="text-primary-container"
+            >at Machine Scale.</span
+          >
+        </h1>
+        <p
+          class="text-on-surface-variant text-xl mb-4 leading-relaxed opacity-90 max-w-2xl mx-auto"
+        >
+          We're finalising pricing. Request early access — we'll reach out with
+          a demo and be first in line when plans go live.
+        </p>
+      </div>
+      <div class="absolute inset-0 z-0 opacity-30 pointer-events-none">
+        <div
+          class="absolute top-1/2 left-1/4 -translate-y-1/2 w-[600px] h-[600px] bg-primary-container/20 rounded-full blur-[140px]"
+        ></div>
+        <div
+          class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-primary-container/10 rounded-full blur-[120px]"
+        ></div>
+      </div>
+    </section>
+
+    <!-- Plan previews (teaser) -->
+    <section class="pb-24">
+      <div class="max-w-5xl mx-auto px-8">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
+          <!-- Starter -->
+          <div
+            class="plan-card bg-surface-container border border-outline-variant/20 rounded-sm p-8 flex flex-col"
+          >
+            <div class="mb-8">
+              <div
+                class="font-label text-[0.6rem] uppercase tracking-[0.2em] text-on-surface-variant mb-3 font-bold"
+              >
+                Starter
+              </div>
+              <div
+                class="font-headline text-4xl font-black text-on-surface mb-1"
+              >
+                —
+              </div>
+              <div
+                class="font-label text-xs text-on-surface-variant/60 uppercase tracking-wider"
+              >
+                TBD
+              </div>
+            </div>
+            <ul
+              class="space-y-3 text-sm text-on-surface-variant mb-8 flex-grow"
+            >
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                Up to N datasets
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                Scheduled updates
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                CSV export
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-on-surface-variant/30"
+                  style="font-size: 16px"
+                  >remove</span
+                >
+                API access
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-on-surface-variant/30"
+                  style="font-size: 16px"
+                  >remove</span
+                >
+                Webhook notifications
+              </li>
+            </ul>
+            <button
+              disabled
+              class="w-full border border-outline-variant/30 text-on-surface-variant/50 px-6 py-3 rounded-sm font-headline font-bold text-sm cursor-not-allowed"
+            >
+              Coming Soon
+            </button>
+          </div>
+
+          <!-- Pro (featured) -->
+          <div
+            class="plan-card featured bg-surface-container border rounded-sm p-8 flex flex-col relative overflow-hidden"
+          >
+            <div
+              class="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-primary-container via-primary-container/60 to-transparent"
+            ></div>
+            <div class="mb-8">
+              <div class="flex items-center gap-3 mb-3">
+                <div
+                  class="font-label text-[0.6rem] uppercase tracking-[0.2em] text-primary-container font-bold"
+                >
+                  Pro
+                </div>
+              </div>
+              <div
+                class="font-headline text-4xl font-black text-on-surface mb-1"
+              >
+                —
+              </div>
+              <div
+                class="font-label text-xs text-on-surface-variant/60 uppercase tracking-wider"
+              >
+                TBD / month
+              </div>
+            </div>
+            <ul
+              class="space-y-3 text-sm text-on-surface-variant mb-8 flex-grow"
+            >
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                Unlimited datasets
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                Scheduled updates
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                CSV + JSON export
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                API access
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                Webhook notifications
+              </li>
+            </ul>
+            <button
+              disabled
+              class="w-full bg-primary-container/20 border border-primary-container/30 text-primary-container/60 px-6 py-3 rounded-sm font-headline font-bold text-sm cursor-not-allowed"
+            >
+              Coming Soon
+            </button>
+          </div>
+
+          <!-- Enterprise -->
+          <div
+            class="plan-card bg-surface-container border border-outline-variant/20 rounded-sm p-8 flex flex-col"
+          >
+            <div class="mb-8">
+              <div
+                class="font-label text-[0.6rem] uppercase tracking-[0.2em] text-on-surface-variant mb-3 font-bold"
+              >
+                Enterprise
+              </div>
+              <div
+                class="font-headline text-4xl font-black text-on-surface mb-1"
+              >
+                Custom
+              </div>
+              <div
+                class="font-label text-xs text-on-surface-variant/60 uppercase tracking-wider"
+              >
+                Talk to us
+              </div>
+            </div>
+            <ul
+              class="space-y-3 text-sm text-on-surface-variant mb-8 flex-grow"
+            >
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                Everything in Pro
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                Custom schemas & pipelines
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                SLA & priority support
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                On-premise option
+              </li>
+              <li class="flex items-center gap-3">
+                <span
+                  class="material-symbols-outlined text-primary-container"
+                  style="font-size: 16px"
+                  >check</span
+                >
+                Volume pricing
+              </li>
+            </ul>
+            <button
+              disabled
+              class="w-full border border-outline-variant/30 text-on-surface-variant/50 px-6 py-3 rounded-sm font-headline font-bold text-sm cursor-not-allowed"
+            >
+              Coming Soon
+            </button>
+          </div>
+        </div>
+
+        <!-- Email capture -->
+        <div class="max-w-lg mx-auto text-center">
+          <p
+            class="font-label text-sm uppercase tracking-widest text-on-surface-variant mb-8 opacity-70"
+          >
+            Get notified when pricing goes live
+          </p>
+          <form
+            id="demo-form"
+            onsubmit="handleDemoRequest(event)"
+            class="flex flex-col sm:flex-row gap-3 justify-center items-stretch mb-4"
+          >
+            <input
+              id="demo-email"
+              type="email"
+              required
+              placeholder="your@email.com"
+              class="flex-1 bg-surface-container border border-outline-variant/30 text-on-surface font-label text-sm px-6 py-4 rounded-sm outline-none focus:border-primary-container transition-colors placeholder-on-surface-variant/40"
+              style="margin: 0"
+            />
+            <button
+              id="demo-btn"
+              type="submit"
+              class="bg-primary-container text-on-primary-fixed px-10 py-4 rounded-sm font-headline font-black text-base hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,89,10,0.25)]"
+              style="width: auto"
+            >
+              Request Access
+            </button>
+          </form>
+          <p
+            id="demo-success"
+            class="hidden font-label text-sm text-primary-container tracking-widest uppercase"
+          >
+            ✓ &nbsp;Got it — we'll be in touch.
+          </p>
+          <p
+            id="demo-error"
+            class="hidden font-label text-sm text-red-400 tracking-widest uppercase"
+          ></p>
+          <p
+            class="font-label text-[0.6rem] text-on-surface-variant/50 uppercase tracking-widest mt-4"
+          >
+            No spam. Just one email.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="w-full py-16 border-t border-[#5B4037]/15">
+      <div
+        class="grid grid-cols-2 md:grid-cols-4 gap-12 max-w-7xl mx-auto px-8"
+      >
+        <div class="col-span-2 md:col-span-1">
+          <div
+            class="text-lg font-bold text-on-surface mb-8 uppercase tracking-tighter"
+          >
+            Scrappy
+          </div>
+          <p
+            class="font-label text-[0.6875rem] text-gray-500 uppercase leading-relaxed tracking-[0.05em] max-w-xs font-medium"
+          >
+            AI-powered web scraping and structured data extraction. Precise,
+            fast, and fully automated.
+          </p>
+        </div>
+        <div>
+          <h4
+            class="font-label text-[0.6875rem] text-on-surface font-bold mb-8 tracking-[0.2em] uppercase"
+          >
+            Platform
+          </h4>
+          <ul
+            class="space-y-5 font-label text-[0.6875rem] text-gray-500 uppercase tracking-[0.1em] font-medium"
+          >
+            <li>
+              <a
+                class="hover:text-[#FF590A] transition-colors"
+                href="https://docs.scrappy.kube.megazord.studio"
+                >Documentation</a
+              >
+            </li>
+            <li>
+              <a
+                class="hover:text-[#FF590A] transition-colors"
+                href="https://app.scrappy.kube.megazord.studio"
+                >App</a
+              >
+            </li>
+          </ul>
+        </div>
+        <div>
+          <h4
+            class="font-label text-[0.6875rem] text-on-surface font-bold mb-8 tracking-[0.2em] uppercase"
+          >
+            Legal
+          </h4>
+          <ul
+            class="space-y-5 font-label text-[0.6875rem] text-gray-500 uppercase tracking-[0.1em] font-medium"
+          >
+            <li>
+              <a class="hover:text-[#FF590A] transition-colors" href="#"
+                >Privacy Policy</a
+              >
+            </li>
+            <li>
+              <a class="hover:text-[#FF590A] transition-colors" href="#"
+                >Terms of Service</a
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="col-span-2 md:col-span-1">
+          <h4
+            class="font-label text-[0.6875rem] text-on-surface font-bold mb-8 tracking-[0.2em] uppercase"
+          >
+            Stay Updated
+          </h4>
+          <div
+            class="flex border-b border-outline-variant/30 pb-3 focus-within:border-primary-container transition-colors"
+          >
+            <input
+              class="bg-transparent border-none text-[0.6875rem] font-label focus:ring-0 w-full text-on-surface placeholder-gray-600 uppercase tracking-widest"
+              placeholder="YOUR@EMAIL.COM"
+              type="email"
+            />
+            <button
+              class="material-symbols-outlined text-primary-container hover:translate-x-1 transition-transform"
+            >
+              arrow_forward
+            </button>
+          </div>
+        </div>
+      </div>
+      <div
+        class="max-w-7xl mx-auto px-8 mt-20 flex flex-col md:flex-row justify-between items-center gap-8 border-t border-outline-variant/10 pt-10"
+      >
+        <div
+          class="font-label text-[0.6875rem] text-gray-500 tracking-[0.1em] uppercase font-bold"
+        >
+          © 2025 Scrappy. All rights reserved.
+        </div>
+      </div>
+    </footer>
+
+    <script>
+      // Configure this to point at your scrappy server
+      const API_BASE = "https://app.scrappy.kube.megazord.studio";
+
+      async function handleDemoRequest(e) {
+        e.preventDefault();
+        const email = document.getElementById("demo-email").value;
+        const btn = document.getElementById("demo-btn");
+        const errEl = document.getElementById("demo-error");
+
+        btn.disabled = true;
+        btn.textContent = "Sending…";
+        errEl.classList.add("hidden");
+
+        try {
+          const res = await fetch(`${API_BASE}/api/contact`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email }),
+          });
+          if (!res.ok) throw new Error("server error");
+          document.getElementById("demo-form").classList.add("hidden");
+          document.getElementById("demo-success").classList.remove("hidden");
+        } catch {
+          btn.disabled = false;
+          btn.textContent = "Request Access";
+          errEl.textContent = "Something went wrong — try again.";
+          errEl.classList.remove("hidden");
+        }
+      }
+
+      function toggleTheme() {
+        const isLight =
+          document.documentElement.getAttribute("data-theme") === "light";
+        document.documentElement.setAttribute(
+          "data-theme",
+          isLight ? "dark" : "light",
+        );
+        localStorage.setItem("theme", isLight ? "dark" : "light");
+      }
+      (function () {
+        const saved = localStorage.getItem("theme");
+        if (saved) document.documentElement.setAttribute("data-theme", saved);
+      })();
+    </script>
+  </body>
+</html>

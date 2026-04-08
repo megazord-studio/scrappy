@@ -1,8 +1,10 @@
 import "dotenv/config";
 import Fastify, { type FastifyRequest, type FastifyReply } from "fastify";
 import staticPlugin from "@fastify/static";
+import cookiePlugin from "@fastify/cookie";
 import { timingSafeEqual, randomBytes } from "crypto";
 import { resolve } from "path";
+import { auth } from "./auth.js";
 import { createJob, getJob, listJobs, getJobEvents, type Job } from "./jobs.js";
 import { dbClearJobs } from "./db.js";
 import { listSchemas, listOutputs, runIndexJob, runUpdateJob, getLLMClient } from "./runner.js";
@@ -16,6 +18,68 @@ import { normalizeEntityName } from "../lib/normalize.js";
 
 const app = Fastify({ logger: false });
 
+await app.register(cookiePlugin);
+
+// Extend request with session user
+declare module "fastify" {
+  interface FastifyRequest {
+    sessionUser?: { id: string; email: string; name: string; role: string };
+  }
+}
+
+// Session preHandler — populates req.sessionUser for authenticated requests
+const AUTH_PREFIX = "/api/auth";
+const PUBLIC_PATHS = new Set(["/signin", "/signup", "/api/contact"]);
+
+app.addHook("preHandler", async (req, reply) => {
+  const path = req.url.split("?")[0];
+  if (path.startsWith(AUTH_PREFIX)) return;
+  if (PUBLIC_PATHS.has(path)) return;
+  if (!path.startsWith("/api/")) return; // static files / SPA — let through
+
+  const sessionData = await auth.api.getSession({
+    headers: new Headers(req.headers as Record<string, string>),
+  });
+
+  if (!sessionData) {
+    return reply.code(401).send({ error: "unauthorized" });
+  }
+
+  req.sessionUser = {
+    id: sessionData.user.id,
+    email: sessionData.user.email,
+    name: sessionData.user.name,
+    role: (sessionData.user as { role?: string }).role ?? "user",
+  };
+});
+
+// Mount Better Auth at /api/auth/*
+// Fastify consumes req.raw stream before we can pass it to Better Auth,
+// so reconstruct a web-standard Request from the already-parsed body.
+app.all("/api/auth/*", async (req, reply) => {
+  const protocol = req.protocol ?? "http";
+  const host = req.headers.host ?? "localhost";
+  const url = `${protocol}://${host}${req.url}`;
+  const headers = new Headers(req.headers as Record<string, string>);
+
+  let bodyInit: string | undefined;
+  if (req.body && !["GET", "HEAD"].includes(req.method)) {
+    bodyInit = JSON.stringify(req.body);
+    headers.set("content-type", "application/json");
+  }
+
+  const webRequest = new Request(url, {
+    method: req.method,
+    headers,
+    body: bodyInit,
+  });
+
+  const response = await auth.handler(webRequest);
+
+  reply.code(response.status);
+  response.headers.forEach((value: string, key: string) => reply.header(key, value));
+  reply.send(await response.text());
+});
 
 function requireApiKey(req: FastifyRequest, reply: FastifyReply): boolean {
   const settings = readSettings();
@@ -713,6 +777,48 @@ Rules:
   } catch (e) {
     return reply.code(500).send({ error: String(e) });
   }
+});
+
+// --- auth pages: serve SPA so client-side auth gate handles them ---
+app.get("/signin", (_req, reply) => reply.sendFile("index.html"));
+app.get("/signup", (_req, reply) => reply.sendFile("index.html"));
+
+// --- contact / demo request (used by landing page) ---
+app.options("/api/contact", async (_req, reply) => {
+  reply.header("Access-Control-Allow-Origin", "*");
+  reply.header("Access-Control-Allow-Methods", "POST, OPTIONS");
+  reply.header("Access-Control-Allow-Headers", "Content-Type");
+  return reply.code(204).send();
+});
+
+app.post("/api/contact", async (req, reply) => {
+  reply.header("Access-Control-Allow-Origin", "*");
+  const { email } = req.body as { email?: string };
+  if (!email || !email.includes("@")) {
+    return reply.code(400).send({ error: "valid email required" });
+  }
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return reply.code(500).send({ error: "RESEND_API_KEY not configured" });
+
+  const from = process.env.RESEND_FROM ?? "Scrappy <noreply@scrappy.studio>";
+  const to = process.env.CONTACT_TO ?? "hello@scrappy.studio";
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from,
+      to,
+      subject: "New Demo Request — Scrappy",
+      html: `<p>New early access request:</p><p><strong>${email}</strong></p>`,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    return reply.code(502).send({ error: "failed to send email", detail: body });
+  }
+  return { ok: true };
 });
 
 await seedSchemasFromFiles(db);

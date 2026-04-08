@@ -173,7 +173,7 @@
     </div>
     <div class="hidden md:flex items-center space-x-8 font-headline font-bold tracking-tight text-sm">
       <a class="text-[#FF590A] border-b-2 border-[#FF590A] pb-1" href="#">Platform</a>
-      <a class="text-gray-400 hover:text-on-surface transition-colors flex items-center gap-2" href="#pricing">
+      <a class="text-gray-400 hover:text-on-surface transition-colors flex items-center gap-2" href="pricing.html">
         Pricing
         <span class="font-label text-[0.55rem] font-bold tracking-widest uppercase bg-primary-container/10 text-primary-container border border-primary-container/20 px-1.5 py-0.5 rounded-sm">Soon</span>
       </a>
@@ -183,8 +183,8 @@
         <span class="material-symbols-outlined icon-dark" style="font-size:20px">light_mode</span>
         <span class="material-symbols-outlined icon-light" style="font-size:20px">dark_mode</span>
       </button>
-      <a href="https://app.YOUR_DOMAIN" class="text-gray-400 hover:text-[#e2e2e2] transition-colors font-headline font-bold tracking-tight text-sm" style="color:var(--color-on-surface);opacity:0.6">Sign In</a>
-      <a href="https://app.YOUR_DOMAIN" class="bg-primary-container text-on-primary-fixed px-6 py-2 rounded-sm font-headline font-bold tracking-tight text-sm hover:scale-95 duration-200 transition-all">Get Started</a>
+      <a href="https://app.scrappy.kube.megazord.studio/signin" class="text-gray-400 hover:text-[#e2e2e2] transition-colors font-headline font-bold tracking-tight text-sm" style="color:var(--color-on-surface);opacity:0.6">Sign In</a>
+      <a href="https://app.scrappy.kube.megazord.studio/signup" class="bg-primary-container text-on-primary-fixed px-6 py-2 rounded-sm font-headline font-bold tracking-tight text-sm hover:scale-95 duration-200 transition-all">Get Started</a>
     </div>
   </div>
 </nav>
@@ -202,7 +202,7 @@
           AI-powered web scraping and structured data extraction. Define a schema, point it at the web — Scrappy handles the rest.
         </p>
         <div class="flex flex-wrap gap-4">
-          <a href="https://app.YOUR_DOMAIN" class="bg-primary-container text-on-primary-fixed px-10 py-4 rounded-sm font-headline font-extrabold text-lg flex items-center gap-3 transition-transform hover:scale-[1.02]">
+          <a href="https://app.scrappy.kube.megazord.studio/signup" class="bg-primary-container text-on-primary-fixed px-10 py-4 rounded-sm font-headline font-extrabold text-lg flex items-center gap-3 transition-transform hover:scale-[1.02]">
             Get Started
             <span class="material-symbols-outlined">arrow_forward</span>
           </a>
@@ -315,27 +315,61 @@
     <div class="grid grid-cols-1 md:grid-cols-12 gap-8">
 
       <!-- Feature 1: Schema Generation -->
-      <div class="md:col-span-8 bg-surface-container border border-outline-variant/15 rounded-sm p-12 group overflow-hidden relative">
+      <div class="md:col-span-8 bg-surface-container border border-outline-variant/15 rounded-sm p-8 sm:p-12 group overflow-hidden relative">
         <div class="relative z-10">
           <span class="material-symbols-outlined text-primary-container text-4xl mb-6">schema</span>
-          <h3 class="font-headline text-4xl font-bold text-on-surface mb-6">AI Schema Generation</h3>
-          <p class="text-on-surface-variant max-w-lg mb-10 text-lg leading-relaxed">
+          <h3 class="font-headline text-3xl sm:text-4xl font-bold text-on-surface mb-4">AI Schema Generation</h3>
+          <p class="text-on-surface-variant max-w-lg mb-8 text-base sm:text-lg leading-relaxed">
             Describe what you want to scrape in plain language. Scrappy builds the schema, defines the fields, and starts extracting — no configuration required.
           </p>
-          <div class="mt-12 space-y-4">
-            <div class="flex items-center gap-6">
-              <div class="px-5 py-2.5 bg-surface-container-highest border border-primary-container/40 rounded-sm text-primary-container font-label text-xs uppercase font-bold tracking-wider">User Prompt</div>
-              <div class="h-[1px] flex-grow bg-outline-variant/30 relative">
-                <div class="absolute right-0 -top-1 w-2.5 h-2.5 rounded-full bg-primary-container shadow-[0_0_10px_#FF590A]"></div>
+
+          <!-- Prompt → Schema visual -->
+          <div class="space-y-3">
+            <!-- User prompt bubble -->
+            <div class="bg-surface-container-high border border-outline-variant/20 rounded-sm p-4">
+              <div class="flex items-center gap-2 mb-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary-container"></span>
+                <span class="font-label text-[0.6rem] uppercase tracking-[0.15em] text-primary-container font-bold">User</span>
               </div>
-              <div class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/30 rounded-sm text-on-surface-variant font-label text-xs uppercase font-bold tracking-wider">Schema: bankName, rate, url</div>
+              <p class="font-label text-xs text-on-surface-variant leading-relaxed">
+                "Scrape Swiss savings account rates — I need the bank name, interest rate, account type, and source URL"
+              </p>
             </div>
-            <div class="ml-24 flex items-center gap-6">
-              <div class="w-px h-12 bg-outline-variant/30"></div>
-              <div class="flex-grow">
-                <div class="flex items-center gap-6">
-                  <div class="h-[1px] w-12 bg-outline-variant/30"></div>
-                  <div class="px-5 py-2.5 bg-surface-container-highest border border-outline-variant/30 rounded-sm text-on-surface-variant font-label text-xs uppercase font-bold tracking-wider">Dedupe: bankName + product</div>
+
+            <!-- Arrow -->
+            <div class="flex items-center gap-3 px-2">
+              <div class="w-px h-6 bg-outline-variant/30 mx-auto"></div>
+            </div>
+
+            <!-- Generated schema output -->
+            <div class="bg-surface-container-lowest border border-primary-container/20 rounded-sm overflow-hidden">
+              <div class="flex items-center justify-between px-4 py-2.5 border-b border-outline-variant/15 bg-primary-container/5">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary-container" style="font-size:14px">auto_awesome</span>
+                  <span class="font-label text-[0.6rem] uppercase tracking-[0.15em] text-primary-container font-bold">Generated Schema</span>
+                </div>
+                <span class="font-label text-[0.6rem] text-on-surface-variant/50 uppercase tracking-wider">swiss-savings-rates</span>
+              </div>
+              <div class="divide-y divide-outline-variant/10">
+                <div class="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[120px_1fr_auto] items-center gap-3 px-4 py-2.5">
+                  <span class="font-label text-xs font-bold text-on-surface truncate">bankName</span>
+                  <span class="font-label text-[0.6rem] text-on-surface-variant/60 truncate hidden sm:block">Primary entity name</span>
+                  <span class="font-label text-[0.6rem] px-2 py-1 rounded-sm bg-primary-container/10 text-primary-container font-bold uppercase tracking-wide">dedupe</span>
+                </div>
+                <div class="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[120px_1fr_auto] items-center gap-3 px-4 py-2.5">
+                  <span class="font-label text-xs font-bold text-on-surface truncate">rate</span>
+                  <span class="font-label text-[0.6rem] text-on-surface-variant/60 truncate hidden sm:block">Interest rate, e.g. "1.5%"</span>
+                  <span class="font-label text-[0.6rem] px-2 py-1 rounded-sm bg-surface-bright/40 text-on-surface-variant font-bold uppercase tracking-wide">tracked</span>
+                </div>
+                <div class="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[120px_1fr_auto] items-center gap-3 px-4 py-2.5">
+                  <span class="font-label text-xs font-bold text-on-surface truncate">accountType</span>
+                  <span class="font-label text-[0.6rem] text-on-surface-variant/60 truncate hidden sm:block">Savings product variant</span>
+                  <span class="font-label text-[0.6rem] px-2 py-1 rounded-sm bg-primary-container/10 text-primary-container font-bold uppercase tracking-wide">dedupe</span>
+                </div>
+                <div class="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[120px_1fr_auto] items-center gap-3 px-4 py-2.5">
+                  <span class="font-label text-xs font-bold text-on-surface truncate">url</span>
+                  <span class="font-label text-[0.6rem] text-on-surface-variant/60 truncate hidden sm:block">Source page URL</span>
+                  <span class="font-label text-[0.6rem] px-2 py-1 rounded-sm bg-outline-variant/15 text-on-surface-variant/60 font-bold uppercase tracking-wide">url</span>
                 </div>
               </div>
             </div>
@@ -433,46 +467,26 @@
 </section>
 
 
-<!-- CTA / Pricing -->
-<section id="pricing" class="py-40 relative overflow-hidden">
-  <div class="max-w-7xl mx-auto px-8 relative z-10 text-center">
-    <div class="inline-block p-[1px] rounded-sm bg-gradient-to-r from-primary-container to-transparent mb-10">
+<!-- CTA teaser -->
+<section class="py-32 relative overflow-hidden">
+  <div class="max-w-3xl mx-auto px-8 relative z-10 text-center">
+    <div class="inline-block p-[1px] rounded-sm bg-gradient-to-r from-primary-container to-transparent mb-8">
       <div class="bg-surface px-8 py-2.5 rounded-sm font-label text-xs uppercase text-primary-container font-bold tracking-[0.2em]">Pricing coming soon</div>
     </div>
-    <h2 class="font-headline text-6xl md:text-8xl font-black text-on-surface mb-6 leading-[0.9] tracking-tight">
+    <h2 class="font-headline text-5xl md:text-7xl font-black text-on-surface mb-6 leading-[0.9] tracking-tight">
       Unlock the Web<br/>at Machine Scale.
     </h2>
-    <p class="text-on-surface-variant font-label text-sm uppercase tracking-widest mb-14 opacity-70">
-      Request early access — we'll reach out with a demo and pricing details.
+    <p class="text-on-surface-variant font-label text-sm uppercase tracking-widest mb-10 opacity-70">
+      Plans, limits, and pricing are being finalised.
     </p>
-
-    <!-- Email capture -->
-    <form id="demo-form" onsubmit="handleDemoRequest(event)" class="flex flex-col sm:flex-row gap-3 justify-center items-stretch max-w-lg mx-auto mb-10">
-      <input
-        id="demo-email"
-        type="email"
-        required
-        placeholder="your@email.com"
-        class="flex-1 bg-surface-container border border-outline-variant/30 text-on-surface font-label text-sm px-6 py-4 rounded-sm outline-none focus:border-primary-container transition-colors placeholder-on-surface-variant/40"
-        style="margin:0"
-      />
-      <button
-        type="submit"
-        class="bg-primary-container text-on-primary-fixed px-10 py-4 rounded-sm font-headline font-black text-base hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,89,10,0.25)]"
-        style="width:auto"
-      >
-        Request Demo
-      </button>
-    </form>
-    <p id="demo-success" class="hidden font-label text-sm text-primary-container tracking-widest uppercase">
-      ✓ &nbsp;Got it — we'll be in touch.
-    </p>
-
-    <p class="font-label text-[0.6rem] text-on-surface-variant/50 uppercase tracking-widest mt-4">No spam. Just one email.</p>
+    <a href="pricing.html" class="inline-flex items-center gap-3 bg-primary-container text-on-primary-fixed px-10 py-4 rounded-sm font-headline font-black text-lg hover:scale-[1.02] transition-transform shadow-[0_0_20px_rgba(255,89,10,0.25)]">
+      Request Early Access
+      <span class="material-symbols-outlined">arrow_forward</span>
+    </a>
   </div>
   <div class="absolute inset-0 z-0 opacity-30 pointer-events-none">
     <div class="absolute top-1/2 left-1/4 -translate-y-1/2 w-[600px] h-[600px] bg-primary-container/20 rounded-full blur-[140px]"></div>
-    <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px]"></div>
+    <div class="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-primary-container/10 rounded-full blur-[120px]"></div>
   </div>
 </section>
 
@@ -488,8 +502,8 @@
     <div>
       <h4 class="font-label text-[0.6875rem] text-on-surface font-bold mb-8 tracking-[0.2em] uppercase">Platform</h4>
       <ul class="space-y-5 font-label text-[0.6875rem] text-gray-500 uppercase tracking-[0.1em] font-medium">
-        <li><a class="hover:text-[#FF590A] transition-colors" href="https://docs.YOUR_DOMAIN">Documentation</a></li>
-        <li><a class="hover:text-[#FF590A] transition-colors" href="https://app.YOUR_DOMAIN">App</a></li>
+        <li><a class="hover:text-[#FF590A] transition-colors" href="https://docs.scrappy.kube.megazord.studio">Documentation</a></li>
+        <li><a class="hover:text-[#FF590A] transition-colors" href="https://app.scrappy.kube.megazord.studio">App</a></li>
       </ul>
     </div>
     <div>
@@ -514,15 +528,6 @@
   </div>
 </footer>
 <script>
-  function handleDemoRequest(e) {
-    e.preventDefault();
-    const email = document.getElementById('demo-email').value;
-    // Replace this with your actual form handler / API call
-    window.location.href = 'mailto:demo@YOUR_DOMAIN?subject=Demo%20Request&body=' + encodeURIComponent(email);
-    document.getElementById('demo-form').classList.add('hidden');
-    document.getElementById('demo-success').classList.remove('hidden');
-  }
-
   function toggleTheme() {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     document.documentElement.setAttribute('data-theme', isLight ? 'dark' : 'light');

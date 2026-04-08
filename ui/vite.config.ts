@@ -11,6 +11,7 @@ export default defineConfig({
       '/outputs': 'http://localhost:3000',
       '/chat': 'http://localhost:3000',
       '/entities': 'http://localhost:3000',
+      '/api': 'http://localhost:3000',
     },
   },
   build: {

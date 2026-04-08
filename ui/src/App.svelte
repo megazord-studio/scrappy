@@ -9,8 +9,12 @@
   import MonitorScreen from './components/MonitorScreen.svelte';
   import SettingsModal from './components/modals/SettingsModal.svelte';
   import SchemaModal from './components/modals/SchemaModal.svelte';
+  import SignInScreen from './components/SignInScreen.svelte';
+  import SignUpScreen from './components/SignUpScreen.svelte';
+  import WaitingScreen from './components/WaitingScreen.svelte';
   import { jobsStore } from './stores/jobs.svelte';
   import { dashStore } from './stores/dashboard.svelte';
+  import { authStore } from './stores/auth.svelte';
   import { getSchemas, getOutputs, getSettings } from './lib/api';
   import type { Schema } from './lib/types';
 
@@ -67,6 +71,12 @@
     }
   });
 
+  // Auth — detect /signup path to pre-select view
+  let authView = $state<'signin' | 'signup'>(
+    window.location.pathname === '/signup' ? 'signup' : 'signin'
+  );
+  $effect(() => { authStore.check(); });
+
   let settingsOpen = $state(false);
   let schemaModalOpen = $state(false);
   let editingSchemaId = $state<string | null>(null);
@@ -93,6 +103,29 @@
     return () => clearInterval(interval);
   });
 </script>
+
+{#if authStore.loading}
+  <div class="auth-loader">
+    <span class="spinner"></span>
+  </div>
+
+{:else if !authStore.user}
+  {#if authView === 'signup'}
+    <SignUpScreen
+      onSuccess={() => { authView = 'signin'; }}
+      onSwitchToSignIn={() => { authView = 'signin'; }}
+    />
+  {:else}
+    <SignInScreen
+      onSuccess={() => {}}
+      onSwitchToSignUp={() => { authView = 'signup'; }}
+    />
+  {/if}
+
+{:else if !authStore.isAdmin}
+  <WaitingScreen />
+
+{:else}
 
 <TopBar
   {screen}
@@ -143,3 +176,5 @@
   onClose={() => { schemaModalOpen = false; }}
   onSaved={loadSelects}
 />
+
+{/if}
